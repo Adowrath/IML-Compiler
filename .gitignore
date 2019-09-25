@@ -1,0 +1,5 @@
+.stack-work
+
+# VSCode Generates these, sadly
+*.hi
+*.o
