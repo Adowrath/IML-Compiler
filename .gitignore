@@ -3,3 +3,5 @@
 # VSCode Generates these, sadly
 *.hi
 *.o
+.vscode
+*.exe
