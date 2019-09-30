@@ -3,8 +3,7 @@ module Main where
 import System.IO
 import System.Environment
 
-import Tokenizer
-import Tokens
+import IML.Token.Tokenizer
 
 -- Argument Dispatcher
 dispatch :: [(String, [String] -> IO ())]
