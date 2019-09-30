@@ -1,4 +1,4 @@
-module Tokens where
+module IML.Token.Tokens where
 
 type TokenList = [Token]
 
@@ -20,13 +20,13 @@ data Token =
     | Fun | Endfun
     | If | Then | Else | Endif
     | Proc | Endproc
-    | Progarm | Endprogram
+    | Program | Endprogram
     | While | Do | Endwhile
 
     | DebugIn | DebugOut
     | Global | Local
     | Returns | Skip
-    deriving Show
+    deriving (Show, Eq)
 
 {-
 DivE/ModE is Euclidian
@@ -37,12 +37,12 @@ And vs. CAnd? We do not know.
 -}
 data OpType =
     Plus | Minus | Times
-    | DivE | ModE -- | DvF | ModF | DivT | ModT
-    | LT | GT | LTE | GTE | EQ | NE
-    | Not -- | And | Or | CAnd | COr
-    deriving Show
+    | DivE | ModE -- DvF | ModF | DivT | ModT
+    | LessThan | GreaterThan | LessThanEquals | GreaterThanEquals | Equals | NotEquals
+    | Not -- And | Or | CAnd | COr
+    deriving (Show, Eq)
 
-data FlowMode = In | InOut | Out deriving Show
-data MechMode = Copy | Ref deriving Show
-data ChangeMode = Const | Var deriving Show
-data Type = BoolType | Int64Type deriving Show
+data FlowMode = In | InOut | Out deriving (Show, Eq)
+data MechMode = Copy | Ref deriving (Show, Eq)
+data ChangeMode = Const | Var deriving (Show, Eq)
+data Type = BoolType | Int64Type deriving (Show, Eq)
