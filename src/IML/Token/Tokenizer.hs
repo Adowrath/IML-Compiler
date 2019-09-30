@@ -26,8 +26,8 @@ tokenize ('<'          : xs) = Operator LessThan           : tokenize xs
 tokenize ('>'          : xs) = Operator GreaterThan        : tokenize xs
 -- tokenize ('/':'\\'     : xs) = Operator And   : tokenize xs
 -- tokenize ('\\':'/'     : xs) = Operator Or    : tokenize xs
--- tokenize ('/':'\\':'?' : xs) = Operator CAnd  : tokenize xs
--- tokenize ('\\':'/':'?' : xs) = Operator COr   : tokenize xs
+tokenize ('/':'\\':'?' : xs) = Operator CAnd  : tokenize xs
+tokenize ('\\':'/':'?' : xs) = Operator COr   : tokenize xs
 
 tokenize (c               : xs)
     | isAsciiDigit c         = tokenizeNumber $ c : xs

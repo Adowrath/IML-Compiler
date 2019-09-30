@@ -47,7 +47,7 @@ data OpType =
     Plus | Minus | Times
     | DivE | ModE -- DvF | ModF | DivT | ModT
     | LessThan | GreaterThan | LessThanEquals | GreaterThanEquals | Equals | NotEquals
-    | Not -- And | Or | CAnd | COr
+    | Not {- And | Or -} | CAnd | COr
     deriving (Show, Eq)
 
 -- | The Flowmode decides the type of data flow for function parameters.
