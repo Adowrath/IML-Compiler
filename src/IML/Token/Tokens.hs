@@ -1,7 +1,11 @@
 module IML.Token.Tokens where
 
+-- |
+-- Simple alias for the list of tokens.
 type TokenList = [Token]
 
+-- |
+-- Tokens are the smallest useful units of IML.
 data Token =
     Operator OpType
     | LParen | RParen
@@ -15,6 +19,7 @@ data Token =
 
     | Type Type
     | Ident String
+    | IntLit Integer
     | BoolLit Bool
 
     | Call
@@ -30,12 +35,14 @@ data Token =
     deriving (Show, Eq)
 
 {-
-DivE/ModE is Euclidian
+DivE/ModE is Euclidean
 *F is Floored
 *T is Truncated
 
 And vs. CAnd? We do not know.
 -}
+-- |
+-- The different types of operators that IML supports.
 data OpType =
     Plus | Minus | Times
     | DivE | ModE -- DvF | ModF | DivT | ModT
@@ -43,13 +50,18 @@ data OpType =
     | Not -- And | Or | CAnd | COr
     deriving (Show, Eq)
 
+-- | The Flowmode decides the type of data flow for function parameters.
 data FlowMode = In | InOut | Out deriving (Show, Eq)
+-- | TODO: I don't quite know that yet.
 data MechMode = Copy | Ref deriving (Show, Eq)
+-- | Defines whether a variable is a constant or mutable.
 data ChangeMode = Const | Var deriving (Show, Eq)
+-- | The different types of primitives IML supports.
 data Type = BoolType | Int64Type deriving (Show, Eq)
 
+-- | A simple lookup list of all predefined keywords.
 keywordList :: [(String, Token)]
-keywordList = 
+keywordList =
     [ ("bool",       Type BoolType   )
     , ("call",       Call            )
     , ("const",      ChangeMode Const)
