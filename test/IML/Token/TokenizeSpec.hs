@@ -1,13 +1,18 @@
 module IML.Token.TokenizeSpec (spec) where
 
+import Control.Exception (evaluate)
 import Test.Hspec
 import IML.Token.Tokenizer
 import IML.Token.Tokens
 
 spec :: Spec
 spec =
-  describe "the tokenizer" $
+  describe "the tokenizer" $ do
     mapM_ tokenizeTest testCases
+    it "should throw on tabs" $
+      evaluate (tokenize "\t") `shouldThrow` errorCall "We don't like tabs. Actually, we do, but eh."
+    it "should throw on integer literals ending in ticks" $
+      evaluate (length $ tokenize "12''") `shouldThrow` errorCall "Tick at end of integer literal."
 
 tokenizeTest :: (String, String, TokenList) -> SpecWith ()
 tokenizeTest (name, text, expected) =
