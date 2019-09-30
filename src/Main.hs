@@ -17,7 +17,7 @@ file p = do
   let 
     s = head p
   contents <- readFile s
-  putStrLn $ show $ tokenize contents
+  print $ tokenize contents
 
 main :: IO ()
 main = do
