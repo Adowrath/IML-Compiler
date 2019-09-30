@@ -16,13 +16,24 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
+  ghc-options:         -Wall
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-  exposed-modules:     Tokens, Tokenizer
+  exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer
 
 executable iml-compiler
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-  other-modules:       Tokens, Tokenizer
+  other-modules:       IML.Token.Tokens, IML.Token.Tokenizer
+
+test-suite iml-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  ghc-options:         -Wall -ddump-ds
+  main-is:             Spec.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5, hspec == 2.*, iml-compiler
+  other-modules:       IML.Token.TokenizeSpec
+  build-tool-depends:  hspec-discover:hspec-discover == 2.*
