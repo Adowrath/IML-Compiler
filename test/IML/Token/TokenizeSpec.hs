@@ -32,15 +32,14 @@ testCases = [
         "12345 1'2''3'''4''''5",
         [IntLit 12345, IntLit 12345]),
     ("the bool type", "bool", [Type BoolType]),
-    -- TODO: Rest
     ("an identifier", "d1mD1_ding'", [Ident "d1mD1_ding'"]),
     ("a simple while loop",
         unlines [
-          "while  x36 <=37",
-          "  x := x + 1",
-          "endwhile"
+          "while x36  <=67 do",
+          "     x := x-1",
+          "  endwhile"
         ],
-        [While, Ident "x36", Operator LessThanEquals, IntLit 37,
-          Ident "x", Becomes, Ident "x", Operator Plus, IntLit 1,
+        [While, Ident "x36", Operator LessThanEquals, IntLit 67, Do,
+          Ident "x", Becomes, Ident "x", Operator Minus, IntLit 1,
           Endwhile])
   ]
