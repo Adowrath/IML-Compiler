@@ -1,13 +1,12 @@
 module IML.Token.Tokenizer where
 
-import Data.Char
 import Data.Maybe (fromMaybe)
 import IML.Token.Tokens
 
 tokenize :: String -> TokenList
 tokenize []                  = []
 tokenize ('\t'         :  _) = error "We don't like tabs. Actually, we do, but eh."
-tokenize ('/':'/'      : xs) = tokenize $ dropWhile ('\n' /=) xs -- ^ Comments!
+tokenize ('/':'/'      : xs) = tokenize $ dropWhile ('\n' /=) xs -- Comments!
 tokenize (' '          : xs) = tokenize xs
 tokenize ('\n'         : xs) = tokenize xs
 tokenize ('('          : xs) = LParen                      : tokenize xs
@@ -58,12 +57,20 @@ tokenizeNumber str = IntLit (read number) : tokenize rest
       one more digit after it.
     -}
     tokenizeInner :: Bool -> String -> (String, String)
+
+    -- We are at the end of input, after a '.
     tokenizeInner True  []          = error "Tick at end of integer literal."
+    -- We are at the end of input, not after a '.
     tokenizeInner False []          = ([], [])
+    -- We have a ', just skip it and mark it as "after tick".
     tokenizeInner _     ('\'' : xs) = tokenizeInner True xs
+
     tokenizeInner post' (c    : xs)
+    -- We are not at the end, but there's a digit. We take it.
       | isAsciiDigit c              = combine c $ tokenizeInner False xs
+    -- We are after a ', but there isn't a ' or a digit. Invalid!
       | post'                       = error "Tick at end of integer literal."
+    -- We do not have another digit or ', but we're after a '. We can end the literal.
       | otherwise                   = ("", c : xs)
 
     -- Just prepends the given character to the first string in the tuple.
