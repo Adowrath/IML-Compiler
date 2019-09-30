@@ -28,6 +28,7 @@ testCases = [
     -- ("logical operators",
     --     "/\\\\/",
     --     Operator <$> [And, Or, CAnd, COr]),
-    ("the bool type", "bool", [Type BoolType])
+    ("the bool type", "bool", [Type BoolType]),
     -- TODO: Rest
+    ("an identifier", "d1mD1_ding’", [Ident String])
   ]
