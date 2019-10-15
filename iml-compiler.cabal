@@ -19,7 +19,7 @@ library
   ghc-options:         -Wall
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-  exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer
+  exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer, IML.Parser.Parser
 
 executable iml-compiler
   hs-source-dirs:      src
@@ -35,5 +35,5 @@ test-suite iml-tests
   main-is:             Spec.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5, hspec == 2.*, iml-compiler
-  other-modules:       IML.Token.TokenizeSpec
+  other-modules:       IML.Token.TokenizeSpec, IML.Parser.ParserSpec
   build-tool-depends:  hspec-discover:hspec-discover == 2.*
