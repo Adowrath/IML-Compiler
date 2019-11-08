@@ -138,7 +138,16 @@ c init := a &gt; b ? 1 : a &lt; b ? -1 : 0;
 						</ul>
 					</section>
 					<section id="comparisons-tercon-2">
-						Zweite Folie
+						<pre><code class="hljs iml" data-trim>
+proc divide(in  copy const m:int64, in  copy const n:int64,
+            out ref  var   q:int64, out ref  var   r:int64)
+do
+  q init, r init := 0, m;
+  while r >= n do
+    q, r := q + 1, r - n
+  endwhile
+endproc;
+						</code></pre>
 					</section>
 				</section>
 			</div>
@@ -148,17 +157,25 @@ c init := a &gt; b ? 1 : a &lt; b ? -1 : 0;
 
 		<script>
 			function imlLang(hljs) {
+				let identRegex = "[a-zA-Z]([a-zA-Z]|[0-9]|'|_)*";
 				let language = {
 					case_insensitive: false,
 					keywords: {
-						keyword: 'call const copy debugin debugout divE do else endfun endif endrpoc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
+						keyword: 'call const copy debugin debugout divE do else endfun endif endproc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
 						literal: 'true false',
 						built_in: 'bool int64'
 					},
-					lexemes: '[a-zA-Z]([a-zA-Z]|[0-9]|’|_)*',
+					lexemes: identRegex,
 					contains: [
 						hljs.C_LINE_COMMENT_MODE,
-						{ className: 'number', begin: '\\b[0-9]+(’*[0-9]+)*' }
+						{ className: 'number', begin: "\\b[0-9]+('*[0-9]+)*" },
+						{
+							variants: [
+								{ className: 'function', beginKeywords: 'proc fun' }
+							],
+							end: /\(/,
+							contains: [ { className: 'title', begin: identRegex } ]
+						}
 					]
 				};
 				return language;
