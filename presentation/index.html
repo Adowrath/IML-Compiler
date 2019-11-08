@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/monokai.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+			
+			
+			
+				<section id="title-slide">
+					<h1 class="fragment">Zwischenbericht</h1>
+					<h3 class="fragment">Parallel Assignment und<br>Ternäres Konditional in IML</h3>
+					<p class="fragment">
+						<small>von Dominik Landolt<br>und Cyrill Brunner</small>
+					</p>
+				</section>
+				<section id="title-slide2">
+					<h2 class="fragment">Zwischenbericht</h2>
+					<h3 class="fragment">Parallel Assignment und<br>Ternäres Konditional in IML</h3>
+					<p class="fragment">
+						<small>von Dominik Landolt<br>und Cyrill Brunner</small>
+					</p>
+				</section>
+			
+			
+				<section id="overview">
+					Overview
+					<section id="overview-parass">
+						<h2>Parallel Assignment</h2>
+						<pre><code class="hljs iml" data-trim>
+// with var a: int64; var b: int64; var c: int64;
+a init, b init := 1, 2;
+// a = 1, b = 2
+a, b, c init := b, a, a + b;
+// a = 2, b = 1, c = 3
+						</code></pre>
+					</section>
+					<section id="overview-tercon">
+						<h2>Ternäres Konditional</h2>
+						<pre><code class="hljs iml" data-trim data-noescape>
+// with var a: int64; var b: int64; var c: int64;
+a init := 12; b init := 20;
+<span class="fragment">
+c init := a &gt; b ? 1 : a &lt; b ? -1 : 0;
+// c = -1
+</span>
+						</code></pre>
+					</section>
+				</section>
+				
+				
+				
+				<section id="grammar">
+					Grammatik
+					<section id="grammar-parass">
+						<h2>Parallel Assignment</h2>
+					</section>
+					<section id="overview-tercon">
+						<h2>Ternäres Konditional</h2>
+					</section>
+				</section>
+				
+				
+				
+				<section id="restrictions-parass">
+					Einschränkungen &ndash; Parallel Assignment
+					<section id="restrictions-parass-1">
+						<ul>
+						<li>Einschränkungen 1
+						<li>Einschränkungen 2
+						</ul>
+					</section>
+					<section id="restrictions-parass-2">
+						Zweite Folie
+					</section>
+				</section>
+				
+				
+				
+				<section id="restrictions-tercon">
+					Einschränkungen &ndash; Ternäres Konditional
+					<section id="restrictions-tercon-1">
+						<ul>
+						<li>Einschränkungen 1
+						<li>Einschränkungen 2
+						</ul>
+					</section>
+					<section id="restrictions-tercon-2">
+						Zweite Folie
+					</section>
+				</section>
+				
+				
+				
+				<section id="comparisons-parass">
+					<!-- Sprachvergleiche! Begründung und Beispiele auch gleich hier? -->
+					Alternativen &ndash; Parallel Assignment
+					<section id="comparisons-parass-1">
+						<ul>
+						<li>Einschränkungen 1
+						<li>Einschränkungen 2
+						</ul>
+					</section>
+					<section id="comparisons-parass-2">
+						Zweite Folie
+					</section>
+				</section>
+				
+				
+				
+				<section id="comparisons-tercon">
+					Alternativen &ndash; Ternäres Konditional
+					<section id="comparisons-tercon-1">
+						<ul>
+						<li>Alternative 1
+						<li>Alternative
+						</ul>
+					</section>
+					<section id="comparisons-tercon-2">
+						Zweite Folie
+					</section>
+				</section>
+			</div>
+		</div>
+
+		<script src="js/reveal.js"></script>
+
+		<script>
+			function imlLang(hljs) {
+				let language = {
+					case_insensitive: false,
+					keywords: {
+						keyword: 'call const copy debugin debugout divE do else endfun endif endrpoc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
+						literal: 'true false',
+						built_in: 'bool int64'
+					},
+					lexemes: '[a-zA-Z]([a-zA-Z]|[0-9]|’|_)*',
+					contains: [
+						hljs.C_LINE_COMMENT_MODE,
+						{ className: 'number', begin: '\\b[0-9]+(’*[0-9]+)*' }
+					]
+				};
+				return language;
+			}
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+				autoPlayMedia: true,
+				highlight: {
+					highlightOnLoad: false
+				},
+
+				slideNumber: 'h/t',
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback() {
+						hljs.configure({languages: []}); // Disable detection.
+						hljs.registerLanguage('iml', imlLang);
+						hljs.initHighlightingOnLoad(); 
+					}}
+				]
+			});
+		</script>
+	</body>
+</html>
