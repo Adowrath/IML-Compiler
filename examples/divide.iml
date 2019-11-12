@@ -1,0 +1,8 @@
+proc divide(in copy const m:int64, in copy const n:int64,
+            out ref var q:int64, out ref var r:int64)
+do
+  q init, r init := 0, m;
+  while r >= n do
+    q, r := q + 1, r - n
+  endwhile
+endproc;

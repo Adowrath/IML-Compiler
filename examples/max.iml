@@ -1,0 +1,5 @@
+fun max(a: int64, b: int64)
+  returns m: int64
+do
+  m init := a > b ? a : b
+endfun;

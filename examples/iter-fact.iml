@@ -1,0 +1,10 @@
+fun fact(n: int64)
+  returns acc: int64
+local
+  i: int64
+do
+  acc init, i init := 1, 1;
+  while i <= n do
+    acc, i := acc * i, i + 1
+  endwhile
+endfun;

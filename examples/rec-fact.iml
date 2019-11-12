@@ -1,0 +1,5 @@
+fun fact(n: int64)
+  returns m: int64
+do
+  m init := n <= 0 ? 1 : n * fact(n - 1)
+endfun;

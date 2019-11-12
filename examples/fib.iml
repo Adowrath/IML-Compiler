@@ -1,0 +1,10 @@
+fun fib(var n: int64)
+  returns m: int64
+local
+  t: int64
+do
+  m init, t init := 0, 1;
+  while n > 0 do
+    m, t, n = t, m + t, n - 1
+  endwhile
+endfun;
