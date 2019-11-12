@@ -1,0 +1,662 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/darcula.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+
+
+				<section id="title-slide">
+					<h2 class="fragment">
+						Parallel Assignment<br/>
+						und<br/>
+						Ternäres Konditional<br/>
+						in IML
+					</h2>
+					<p class="fragment">
+						<small>von Dominik Landolt<br>und Cyrill Brunner</small>
+					</p>
+				</section>
+
+
+				<section id="overview"><h2>Overview</h2></section>
+
+
+				<section id="overview-parass">
+					<h3>Parallel Assignment</h3>
+					<section id="overview-parass-1">
+						Vorbild Python
+						<pre><code class="hljs python" data-trim>
+							a, b, c = 1, 2, 3
+							print(a, b, c) // "1 2 3"
+						</code></pre>
+						<span class="fragment">
+							IML
+							<pre><code class="hljs iml" data-trim>
+								// with var a, b, c: int64;
+								a init, b init := 1, 2;
+								// a = 1, b = 2
+								a, b, c init := b, a, a + b;
+								// a = 2, b = 1, c = 3
+							</code></pre>
+						</span>
+					</section>
+					<section id="overview-parass-2">
+						<h4>Anwendungsfälle</h4><br/>
+						<ul>
+						<li> Kompakte Mehrzuweisung </li>
+						<li> Swapping von Variablen </li>
+						</ul>
+					</section>
+				</section>
+
+
+
+				<section id="overview-tercon">
+					<h3>Ternäres Konditional</h3>
+					<section id="overview-tercon-1">
+						<pre><code class="hljs iml" data-trim data-noescape>
+							// with var a, b, c: int64;
+							a init := 12; b init := 20;
+							// c mit -1, 0, 1 füllen aufgrund von a &lt;=&gt; b?
+							<span class="fragment">
+							c init := a &gt; b ? 1 : a &lt; b ? -1 : 0;
+							// c = -1
+							</span>
+						</code></pre>
+					</section>
+
+					<section id="overview-tercon-2">
+						<h4>Anwendungsfälle</h4><br/>
+						<ul>
+						<li> Kleine Conditionals </li>
+						<li> Simple Rekursion </li>
+						</ul>
+					</section>
+				</section>
+
+
+				<section id="syntax"><h2>Syntax</h2></section>
+
+
+				<section id="syntax-parass">
+					<h3>Parallel Assignment</h3>
+					<section id="syntax-parass-1">
+						<h4>Lexikalische Syntax</h4>
+						<ul>
+						<li class="fragment">Unverändert!</li>
+						<li class="fragment"><code>:=&nbsp;&nbsp;&rArr;&nbsp;&nbsp;BECOMES</code></li>
+						<li class="fragment"><code>,&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;COMMA</code></li>
+						</ul>
+					</section>
+
+					<section id="syntax-parass-2">
+						<h4>Grammatiksyntax</h4>
+						<pre><code class="hljs ebnf" data-trim data-line-numbers="2,9">
+							cmd ::= SKIP
+								 | exprs BECOMES exprs // expr BECOMES expr
+								 | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
+								 | WHILE expr DO cpsCmd ENDWHILE
+								 | CALL IDENT exprList [globInits]
+								 | DEBUGIN expr
+								 | DEBUGOUT expr
+
+							exprs ::= expr {COMMA expr}
+						</code></pre>
+						
+						<aside class="notes">
+							Problem:<br>
+							Gleiche Anzahl Argumente nicht Überprüfbar<br>
+							Typengleichheit an den Stellen kann nicht überprüft werden
+						</aside>
+					</section>
+				</section>
+
+
+
+				<section id="syntax-tercon">
+					<h3>Ternäres Konditional</h3>
+					<section id="syntax-tercon-1">
+						<h4>Lexikalische Syntax</h4>
+						<table>
+						<tr class="fragment">
+							<td>Neu:</td>
+							<td><code>?&nbsp;&nbsp;&rArr;&nbsp;&nbsp;CONDOPR</code></td>
+						</tr>
+						<tr class="fragment">
+							<td>Bestehend:</td>
+							<td><code>:&nbsp;&nbsp;&rArr;&nbsp;&nbsp;COLON</code></td>
+						</tr>
+						</table>
+					</section>
+
+					<section id="syntax-tercon-2" data-transition="fade">
+						<h4>Grammatiksyntax</h4>
+						<pre><code class="hljs ebnf" data-trim data-line-numbers>
+							// Expressions:
+
+							expr  ::=  term1 | term1 BOOLOPR expr
+							term1 ::=  term2 | term2 RELOPR  term2
+							term2 ::=  term3 | term2 ADDOPR  term3
+							term3 ::= factor | term3 MULTOPR factor
+						</code></pre>
+					</section>
+
+					<section id="syntax-tercon-3" data-transition="fade">
+						<h4>Grammatiksyntax</h4>
+						<pre><code class="hljs ebnf" data-trim data-line-numbers>
+							// Expressions:
+
+							expr  ::=  term2 | term2 BOOLOPR expr
+							term2 ::=  term3 | term3 RELOPR  term3
+							term3 ::=  term4 | term3 ADDOPR  term4
+							term4 ::= factor | term4 MULTOPR factor
+						</code></pre>
+					</section>
+
+					<section id="syntax-tercon-3" data-transition="fade">
+						<h4>Grammatiksyntax</h4>
+						<pre><code class="hljs ebnf" data-trim data-line-numbers>
+							// Expressions:							
+							expr  ::=  term1 | term1 CONDOPR expr COLON expr
+							term1 ::=  term2 | term2 BOOLOPR term1
+							term2 ::=  term3 | term3 RELOPR  term3
+							term3 ::=  term4 | term3 ADDOPR  term4
+							term4 ::= factor | term4 MULTOPR factor
+						</code></pre>
+					</section>
+				</section>
+
+
+				<section id="restrictions"><h2>Einschränkungen</h2></section>
+
+
+				<section id="restrictions-parass">
+					<h3>Parallel Assignment</h3>
+					<section id="restrictions-parass-1">
+						<h4>Kontexteinschränkungen</h4>
+						<ul>
+						<li><code>init</code> pro Variable</li>
+						</ul>
+						<pre><code class="hljs iml" data-trim>
+							// with var a, b, c: int64;
+							b init := 1;
+							// b = 1
+							a init, b, c init := 1, 2, 3;
+							// a = 1, b = 2, c = 3
+						</code></pre>
+					</section>
+					<section id="restrictions-parass-2">
+						<h4>Typeinschränkungen</h4>
+						<ul>
+						<li class="fragment">
+							Einzeln uneingeschränkt (<code>bool</code>, <code>int64</code>)</li>
+						<li class="fragment">
+							Gleiche Zahl und Reihenfolge
+							<pre><code class="hljs iml" data-trim>
+								// var b1,b2: bool; var i1,i2: int64;
+								// all 4 initialized
+								b1, i1, i2, b2 := true, 1, 2, false;
+							</code></pre>
+						</li>
+						</ul>
+					</section>
+				</section>
+
+
+
+				<section id="restrictions-tercon">
+					<h3>Ternäres Konditional</h3>
+					<section id="restrictions-tercon-1">
+						<h4>Kontexteinschränkungen</h4>
+						<table>
+							<tr>
+								<td style="vertical-align: top;"><code>lExpr</code></td>
+								<td>
+									<ul>
+									<li class="fragment">Liefert Adresse</li>
+									<li class="fragment">Momentan: Variable</li>
+									</ul>
+								</td>
+							</tr>
+							<tr class="fragment">
+								<td style="vertical-align: top;"><code>rExpr</code></td>
+								<td>
+									<ul>
+									<li class="fragment">Liefert Wert</li>
+									<li class="fragment"><code>17</code></li>
+									<li class="fragment"><code>a</code></li>
+									<li class="fragment"><code>x + 2</code></li>
+									<li class="fragment"><code>f(17)</code></li>
+									<li class="fragment"><em><code>x == 10 ? 1 : 0</code></em></li>
+									</ul>
+								</td>
+							</tr>
+						</table>
+					</section>
+					<section id="restrictions-tercon-2">
+						<h4>Kontexteinschränkungen</h4>
+						<pre><code class="hljs iml" data-trim data-noescape>
+							proc p1(in    copy   a:int64, in    ref  b:int64,
+							        inout copy   c:int64, inout ref  d:int64,
+							        out   copy   e:int64, out   ref  f:int64)
+							do
+							    // Implementation omitted.
+							endproc;
+
+							lExpr := rExpr;
+							p1(<span class="fragment">rExpr</span>, <span class="fragment">lExpr</span>,
+							   <span class="fragment">lExpr</span>, <span class="fragment">lExpr</span>,
+							   <span class="fragment">lExpr</span>, <span class="fragment">lExpr</span>);
+						</code></pre>
+					</section>
+					<section id="restrictions-tercon-3">
+						<h4>Typeinschränkungen</h4>
+						<code>e1 ? e2 : e3</code><br>
+						<ul>
+							<li class="fragment"><code>type(e1) == bool</code></li>
+							<li class="fragment"><code>type(e2) == type(e3)</code></li>
+							<li class="fragment"><code>type(e1 ? e2 : e3) == type(e2)</code></li>
+						</ul>
+					</section>
+				</section>
+
+
+				<section id="comparisons"><h2>Vergleiche</h2></section>
+
+
+				<section id="comparisons-parass">
+					<h3>Parallel Assignment</h3>
+					<section id="comparisons-parass-1">
+						<table>
+							<tr class="fragment" data-fragment-index="1">
+								<td>
+									<span class="fragment highlight-red" data-fragment-index="5">
+									Ruby<br>Python
+									</span>
+								</td>
+								<td>
+									<pre style="width: 100%;"><code class="hljs python" data-trim>
+										a, b, c = 1, 2, 3
+										a, b    = b, a
+										# a  b  c
+										# 2  1  3
+									</code></pre>
+								</td>
+							</tr>
+							<tr class="fragment" data-fragment-index="2">
+								<td>Golang</td>
+								<td>
+									<pre style="width: 100%;"><code class="hljs go" data-trim>
+										a, b, c := 1, 2, 3
+										a, b     = b, a
+									</code></pre>
+								</td>
+							</tr>
+							<tr class="fragment" data-fragment-index="3">
+								<td>Perl</td>
+								<td>
+									<pre style="width: 100%;"><code class="hljs javascript" data-trim>
+										my ($a, $b, $c) = (1, 2, 3);
+										($a, $b)     = ($b, $a);
+									</code></pre>
+								</td>
+							</tr>
+							<tr class="fragment" data-fragment-index="4">
+								<td>JavaScript</td>
+								<td>
+									<pre style="width: 100%;"><code class="hljs javascript" data-trim>
+										let [a, b, c] = [1, 2, 3];
+										[a, b]        = [b, a];
+										// a  b  c
+										// 2  1  3
+									</code></pre>
+								</td>
+							</tr>
+						</table>
+						<div class="fragment" data-fragment-index="5">
+							Anpassung: <code>:=</code> anstelle von <code>=</code>!
+						</div>
+					</section>
+				</section>
+
+
+
+				<section id="comparisons-tercon-c-family">
+					<h3>Ternäres Konditional</h3>
+					<section id="comparisons-tercon-c-family-head">
+						<h4>C-Familie</h4>
+						<code>
+							<span class="fragment">bedingung ?</span>
+							<span class="fragment">true_value :</span>
+							<span class="fragment">false_value</span>
+						</code>
+					</section>
+					<section id="comparisons-tercon-c-family-ActionScript" data-transition="fade">
+						<h4>ActionScript 3, AWK, C, CFML, Crystal, Java, JavaScript, Ruby, Swift, TestStand, Verilog</h4>
+						<code>a ? b : c</code>
+					</section>
+					<section id="comparisons-tercon-c-family-APL" data-transition="fade">
+						<h4>APL</h4>
+						<code>{ a : b &#8900; c } &#9068;</code>
+					</section>
+					<section id="comparisons-tercon-c-family-Bash" data-transition="fade">
+						<h4>Bash</h4>
+						<code>((a ? b : c))</code>
+					</section>
+					<section id="comparisons-tercon-c-family-Cpp" data-transition="fade">
+						<h4>C++</h4>
+						<code>a ? b : c</code><br/>
+						<code>a ? b : c = d;</code>
+					</section>
+					<section id="comparisons-tercon-c-family-Cs" data-transition="fade">
+						<h4>C#</h4>
+						<code>a ? b : c</code><br/>
+						<code>(a ? ref b : ref c) = d;</code>
+					</section>
+					<section id="comparisons-tercon-c-family-CPL" data-transition="fade">
+						<h4>CPL</h4>
+						<code>a &rarr; b, c</code>
+
+						<aside class="notes">
+							Urvater der Tercon!<br/>
+							Urvater von BCPL, B, C!
+						</aside>
+					</section>
+					<section id="comparisons-tercon-c-family-Perl" data-transition="fade">
+						<h4>Perl</h4>
+						<code>$a ? $b : $c</code>
+					</section>
+					<section id="comparisons-tercon-c-family-PHP" data-transition="fade">
+						<h4>PHP</h4>
+						<code>$a ? $b : $c</code><br>
+						<code>$a ? $b : $c ? $d : $e<br>($a ? $b : $c) ? $d : $e</code>
+					</section>
+					<section id="comparisons-tercon-c-family-Raku" data-transition="fade">
+						<h4>Raku (Perl 6)</h4>
+						<code>$a ?? $b !! $c</code>
+					</section>
+					<section id="comparisons-tercon-c-family-Tcl" data-transition="fade">
+						<h4>Tcl</h4>
+						<code>[expr a ? b : c]</code>
+					</section>
+					<section id="comparisons-tercon-c-family--Problem-" data-transition="fade">
+						<h4>Problem?</h4>
+						<span class="fragment">Lesbarkeit</span>
+					</section>
+				</section>
+
+
+
+				<section id="comparisons-tercon-expr-family">
+					<h3>Ternäres Konditional</h3>
+					<section id="comparisons-tercon-expr-family-head">
+						<h4>Expression-Familie</h4>
+						<code>
+							<span class="fragment">if bedingung</span>
+							<span class="fragment">then true_value</span>
+							<span class="fragment">else false_value</span>
+						</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-Ada" data-transition="fade">
+						<h4>Ada, CoffeeScript, Haskell</h4>
+						<code>if a then b else c</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-ALGOL" data-transition="fade">
+						<h4>ALGOL 68</h4>
+						<code>IF a THEN b ELSE c FI</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-Ceylon" data-transition="fade">
+						<h4>Ceylon</h4>
+						<code>if(a) then b else c</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-Common" data-transition="fade">
+						<h4>Common Lisp, Scheme</h4>
+						<code>(if a b c)</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-Kotlin" data-transition="fade">
+						<h4>Kotlin, Scala</h4>
+						<code>if(a) b else c</code>
+					</section>
+					<section id="comparisons-tercon-expr-family-Ruby" data-transition="fade">
+						<h4>Ruby</h4>
+						<code>if a then b else c end</code><br/>
+
+						<aside class="notes">then oder Newline.</aside>
+					</section>
+					<section id="comparisons-tercon-expr-family-Rust" data-transition="fade">
+						<h4>Rust</h4>
+						<code>if a { b } else { c }</code>
+					</section>
+					<section id="comparisons-tercon-expr-family--Problem-" data-transition="fade">
+						<h4>Problem</h4>
+						<span class="fragment">Expressions vs. Commands</span>
+					</section>
+				</section>
+
+
+
+				<section id="comparisons-tercon-func-family">
+					<h3>Ternäres Konditional</h3>
+					<section id="comparisons-tercon-func-family-head">
+						<h4>Funktions-Familie</h4>
+						<span class="fragment">Looks like a function</span>
+					</section>
+					<section id="comparisons-tercon-func-family-Delphi" data-transition="fade">
+						<h4>Delphi</h4>
+						<code>IfThen(a, b, c)</code>
+					</section>
+					<section id="comparisons-tercon-func-family-Fortran" data-transition="fade">
+						<h4>Fortran</h4>
+						<code>merge(b, c, a)</code>
+					</section>
+					<section id="comparisons-tercon-func-family-R" data-transition="fade">
+						<h4>R</h4>
+						<code>ifelse(a, b, c)</code>
+					</section>
+					<section id="comparisons-tercon-func-family-VB" data-transition="fade">
+						<h4>Visual Basic .NET</h4>
+						<code>If(a, b, c)</code>
+					</section>
+					<section id="comparisons-tercon-func-family--Problem-" data-transition="fade">
+						<h4>Problem</h4>
+						<span class="fragment">Evaluation</span><br/>
+						<span class="fragment">Name clash?</span><br/>
+						<span class="fragment">Definition/Typ? (Generics?!)</span>
+					</section>
+				</section>
+
+
+
+				<section id="comparisons-tercon-spec-family">
+					<h3>Ternäres Konditional</h3>
+					<section id="comparisons-tercon-spec-family-head">
+						<h4>Spezialfälle</h4>
+						<span class="fragment">Für die Vollständigkeit</span>
+					</section>
+					<section id="comparisons-tercon-func-family-APL" data-transition="fade">
+						<h4>APL</h4>
+						<code>b &#8867;&#9059; a &#8866; c</code><br/>
+						<em>RTL!</em>
+					</section>
+					<section id="comparisons-tercon-func-family-Ceylon" data-transition="fade">
+						<h4>Ceylon</h4>
+						<code>a then b else c</code>
+					</section>
+					<section id="comparisons-tercon-func-family-Forth" data-transition="fade">
+						<h4>Forth</h4>
+						<code>a IF b ELSE c THEN ;</code>
+					</section>
+					<section id="comparisons-tercon-func-family-Python" data-transition="fade">
+						<h4>Python</h4>
+						<code>b if a else c</code>
+					</section>
+					<section id="comparisons-tercon-func-family-Smalltalk" data-transition="fade">
+						<h4>Smalltalk</h4>
+						<code>a ifTrue:[b] ifFalse:[c]</code>
+					</section>
+					<section id="comparisons-tercon-func-family-SQL" data-transition="fade">
+						<h4>SQL</h4>
+						<code>CASE WHEN a THEN b ELSE c END</code>
+					</section>
+				</section>
+
+
+				<section id="examples"><h2>Beispiele</h2></section>
+
+
+				<section id="examples-parass">
+					<h3>Parallel Assignment</h3>
+					<section id="examples-parass-1">
+						<h4>Iteratives Faktorial</h4>
+						<pre><code class="hljs iml" data-trim>
+							fun fact(n: int64)
+							  returns acc: int64
+							local
+							  i: int64
+							do
+							  acc init, i init := 1, 1;
+							  while i &lt;= n do
+							    acc, i := acc * i, i + 1
+							  endwhile
+							endfun
+						</code></pre>
+					</section>
+				</section>
+
+
+
+				<section id="examples-tercon">
+					<h3>Ternäres Konditional</h3>
+					<section id="examples-tercon-1">
+						<h4>Max-Funktion</h4>
+						<pre><code class="hljs iml" data-trim>
+							fun max(a: int64, b: int64)
+							  returns m: int64
+							do
+							  m init := a > b ? a : b
+							endfun
+						</code></pre>
+					</section>
+
+					<section id="examples-tercon-2">
+						<h4>Rekursives Faktorial</h4>
+						<pre><code class="hljs iml" data-trim>
+							fun fact(n: int64)
+							  returns m: int64
+							do
+							  m init := n &lt;= 0 ? 1 : n * fact(n - 1)
+							endfun
+						</code></pre>
+					</section>
+				</section>
+			</div>
+		</div>
+
+		<script src="js/reveal.js"></script>
+
+		<script>
+			function imlLang(hljs) {
+				let identRegex = "[a-zA-Z]([a-zA-Z]|[0-9]|'|_)*";
+				let language = {
+					case_insensitive: false,
+					keywords: {
+						keyword: 'call const copy debugin debugout divE do else endfun endif endproc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
+						literal: 'true false',
+						built_in: 'bool int64'
+					},
+					lexemes: identRegex,
+					contains: [
+						hljs.C_LINE_COMMENT_MODE,
+						{ className: 'number', begin: "\\b[0-9]+('*[0-9]+)*" },
+						{
+							variants: [
+								{ className: 'function', beginKeywords: 'proc fun' }
+							],
+							end: /\(/,
+							contains: [ { className: 'title', begin: identRegex } ]
+						}
+					]
+				};
+				return language;
+			}
+
+			function ebnfLang(hljs) {
+				let nonTerminal = {
+					className: "attribute",
+					begin: /[a-z][A-Za-z0-9]*\b/
+				};
+
+				let terminal = {
+					className: "symbol",
+					begin: /[A-Z]+\b/
+				};
+
+				let language = {
+					case_insensitive: false,
+					contains: [
+						hljs.C_LINE_COMMENT_MODE,
+						nonTerminal,
+						terminal
+					]
+				};
+
+				return language;
+			}
+
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+				autoPlayMedia: true,
+				highlight: {
+					highlightOnLoad: false
+				},
+
+				slideNumber: 'h/t',
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback() {
+						hljs.configure({languages: []}); // Disable detection.
+						hljs.registerLanguage('iml', imlLang);
+						hljs.registerLanguage('ebnf', ebnfLang);
+						// hljs.initHighlightingOnLoad();
+
+						Reveal.getConfig().highlight.highlightOnLoad = true;
+						Reveal.getPlugin("highlight").init()
+					}}
+				]
+			});
+		</script>
+	</body>
+</html>
