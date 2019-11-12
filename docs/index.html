@@ -8,7 +8,7 @@
 
 		<link rel="stylesheet" href="css/reset.css">
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+		<link rel="stylesheet" id="theme" href="css/theme/black.css">
 
 		<!-- Theme used for syntax highlighting of code -->
 		<link rel="stylesheet" href="lib/css/darcula.css">
@@ -25,7 +25,29 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-
+				<section id="themes">
+					<h2>Themes</h2>
+					<p>
+						Was ist am lesbarsten?<br>
+						<!-- Hacks to swap themes after the page has loaded. Not flexible and only intended for the reveal.js demo deck. -->
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/black.css'); return false;">Black</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/white.css'); return false;">White</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/league.css'); return false;">League</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/sky.css'); return false;">Sky</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/beige.css'); return false;">Beige</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/simple.css'); return false;">Simple</a> <br>
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/serif.css'); return false;">Serif</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/blood.css'); return false;">Blood</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/night.css'); return false;">Night</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/moon.css'); return false;">Moon</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/solarized.css'); return false;">Solarized</a>
+					</p>
+					<pre><code class="hljs iml" data-trim>
+						proc() fun() int64
+						a init := 12;
+						b init := 20;
+					</code></pre>
+				</section>
 
 
 				<section id="title-slide">
@@ -530,6 +552,21 @@
 				<section id="examples-parass">
 					<h3>Parallel Assignment</h3>
 					<section id="examples-parass-1">
+						<h4>Fibonacci</h4>
+						<pre><code class="hljs iml" data-trim>
+							fun fib(var n: int64)
+							  returns m: int64
+							local
+							  t: int64
+							do
+							  m init, t init := 0, 1;
+							  while n > 0 do
+							    m, t, n = t, m + t, n - 1
+							  endwhile
+							endfun
+						</code></pre>
+					</section>
+					<section id="examples-parass-2">
 						<h4>Iteratives Faktorial</h4>
 						<pre><code class="hljs iml" data-trim>
 							fun fact(n: int64)
@@ -542,6 +579,19 @@
 							    acc, i := acc * i, i + 1
 							  endwhile
 							endfun
+						</code></pre>
+					</section>
+					<section id="examples-parass-3">
+						<h4>Iteratives Faktorial</h4>
+						<pre><code class="hljs iml" data-trim>
+							proc divide(in copy const m:int64, in copy const n:int64,
+							            out ref var q:int64, out ref var r:int64)
+							do
+							  q init, r init := 0, m;
+							  while r >= n do
+							    q, r := q + 1, r - n
+							  endwhile
+							endproc
 						</code></pre>
 					</section>
 				</section>
