@@ -1,7 +1,7 @@
 module IML.Parser.Parser where
 
 {-
-import IML.Token.Tokens (Literal, OpType, Token(Ident, Init), TokenList)
+import IML.Token.Tokens (Literal, OpType, Token(Ident, Init))
 
 type Start = Expr
 type ParseResult r = Either String (r, TokenList)
