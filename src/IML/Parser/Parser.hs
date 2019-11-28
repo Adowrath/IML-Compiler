@@ -1,48 +1,117 @@
 module IML.Parser.Parser where
 
+import           IML.Parser.GeneralParser
+import           IML.Token.Tokens         (Token)
+
+type Parser a = GenParser Token a
+
+token :: Token -> Parser Token
+token = terminal
+
+--token :: Token -> Parser Token
+--token tok = item >>=
 {-
-import IML.Token.Tokens (Literal, OpType, Token(Ident, Init))
+program ::=
+    PROGRAM IDENT progParamList
+    [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
 
-type Start = Expr
-type ParseResult r = Either String (r, TokenList)
+decl ::=
+      stoDecl
+    | funDecl
+    | procDecl
+stoDecl ::=
+      [CHANGEMODE] typedIdent
+funDecl ::=
+      FUN IDENT paramList
+      RETURNS stoDecl
+      [GLOBAL globImps]
+      [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
+procDecl ::=
+      PROC IDENT paramList
+      [GLOBAL globImps]
+      [LOCAL cpsStoDecl] DO cpsCmd ENDPROC
+globImps ::=
+      globImp {COMMA globImp}
+globImp ::=
+      [FLOWMODE] [CHANGEMODE] IDENT
+cpsDecl ::=
+      decl {SEMICOLON decl}
+cpsStoDecl ::=
+      stoDecl {SEMICOLON stoDecl}
 
-parseProgram :: [Terminal] -> Either String Start
-parseProgram xs = do
-  (a, xss) <- parseExpr xs
-  if not $ null xss
-    then Left "We failed to parse the entire input."
-    else Right a
+progParamList ::=
+      LPAREN [progParam {COMMA progParam}] RPAREN
+progParam ::=
+      [FLOWMODE] [CHANGEMODE] typedIdent
+paramList ::=
+      LPAREN [param {COMMA param}] RPAREN
+param ::=
+      [FLOWMODE] [MECHMODE] [CHANGEMODE] typedIdent
+typedIdent ::=
+      IDENT COLON ATOMTYPE
 
--- expr ::= term1 {BOOLOPR term1}
-data Expr = Expr Term1 [(OpType, Term1)]
--- term1 ::= term2 [RELOPR term2]
-data Term1 = Term1 Term2 (Maybe (OpType, Term2))
--- term2 ::= term3 {ADDOPR term3}
-data Term2 = Term2 Term3 [(OpType, Term3)]
--- term3 ::= factor {MULTOPR factor}
-data Term3 = Term3 Factor [(OpType, Factor)]
--- factor ::= LITERAL
---            | IDENT [INIT | exprList]
---            | monadicOpr factor
---            | LPAREN expr RPAREN
-data Factor = Factor1 Literal
-            | Factor2 Ident (Maybe Init)
-            | Factor3 Ident ExprList
-            | Factor4 MonadicOpr Factor
-            | Factor5 Expr
--- exprList ::= LPAREN [expr {COMMA expr}] RPAREN
-data ExprList = ExprList Maybe (Expr, [Expr])
--- monadicOpr ::= NOTOPR | ADDOPR
-data MonadicOpr = NotOpr | AddOpr
+cmd ::=
+      SKIP
+    | exprs BECOMES exprs
+    | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
+    | WHILE expr DO cpsCmd ENDWHILE
+    | CALL IDENT exprList [globInits]
+    | DEBUGIN expr
+    | DEBUGOUT expr
+exprs ::=
+      expr {COMMA expr}
+cpsCmd ::=
+      cmd {SEMICOLON cmd}
+globInits ::=
+      INIT idents
+idents ::=
+      IDENT {COMMA IDENT}
+
+expr  ::=
+      term1 [CONDOPR expr COLON expr]
+term1 ::=
+      term2 [BOOLOPR term1]
+term2 ::=
+      term3 [RELOPR term3]
+term3 ::=
+      term4 term3'
+term3' ::=
+      ADDOPR term4 term3'
+    | Epsilon
+term4 ::=
+      factor
+    | term4 MULTOPR factor
+factor ::=
+      LITERAL
+    | IDENT [INIT | exprList]
+    | monadicOpr factor
+    | LPAREN expr RPAREN
+exprList ::=
+      LPAREN [expr {COMMA expr}] RPAREN
+monadicOpr ::=
+      NOT
+    | ADDOPR
 -}
-
-
+{-
+-}
 type Start = A
+
 type ParseResult r = Either String (r, [Terminal])
 
-data Terminal = TA | TB | TC | TD
-data A = A1 B | A2 deriving (Eq, Show)
-data B = B         deriving (Eq, Show)
+data Terminal
+  = TA
+  | TB
+  | TC
+  | TD
+
+data A
+  = A1 B
+  | A2
+  deriving (Eq, Show)
+
+data B =
+  B
+  deriving (Eq, Show)
 
 parseProgram :: [Terminal] -> Either String Start
 parseProgram xs = do
@@ -52,14 +121,14 @@ parseProgram xs = do
     else Right a
 
 parseA :: [Terminal] -> ParseResult A
-parseA (TA : xs) = do
-   (b, xss) <- parseB xs
-   case xss of
-     (TC : xsss) -> Right (A1 b, xsss)
-     _           -> Left "Expected c."
-parseA (TB : xs) = Right (A2, xs)
+parseA (TA:xs) = do
+  (b, xss) <- parseB xs
+  case xss of
+    (TC:xsss) -> Right (A1 b, xsss)
+    _         -> Left "Expected c."
+parseA (TB:xs) = Right (A2, xs)
 parseA _ = Left "Failed parsing A."
 
 parseB :: [Terminal] -> ParseResult B
-parseB (TD : xs) = Right (B, xs)
-parseB _ = Left "Failed parsing B."
+parseB (TD:xs) = Right (B, xs)
+parseB _       = Left "Failed parsing B."
