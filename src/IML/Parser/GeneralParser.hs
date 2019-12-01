@@ -67,6 +67,13 @@ satisfies p = do
     then return x
     else empty
 
+-- | Takes 0..* elements separated by the given token.
+manySep :: Eq t => t -> GenParser t a -> GenParser t [a]
+manySep separator parseA = ((:) <$> parseA <*> parseSepA) <|> return []
+  where
+    parseSepA = many (terminal separator >> parseA)
+    --  Parse 'a's preceded by the separator, ignoring it.
+
 -- | Takes 1..* elements separated by the given token.
 someSep :: Eq t => t -> GenParser t a -> GenParser t [a]
 someSep separator parseA = (:) <$> parseA <*> parseSepA

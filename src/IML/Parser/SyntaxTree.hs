@@ -136,7 +136,7 @@ data Expr
   | NameExpr Ident Bool -- Variable names, bool = init or not
   | UnaryExpr UnaryOpr Expr
   | BinaryExpr BinaryOpr Expr Expr
-  | TernaryExpr TernaryOpr Expr Expr Expr
+  | ConditionalExpr Expr Expr Expr
   deriving (Eq, Show)
 
 data ChangeMode
@@ -172,11 +172,11 @@ data UnaryOpr
   deriving (Eq, Show)
 
 data BinaryOpr
-  = DivEOpr
+  = MultOpr
+  | DivEOpr
   | ModEOpr
   | PlusOpr
   | MinusOpr
-  | MultOpr
   | LTOpr
   | GTOpr
   | LTEOpr
@@ -185,10 +185,6 @@ data BinaryOpr
   | NeqOpr
   | CAndOpr
   | COrOpr
-  deriving (Eq, Show)
-
-data TernaryOpr =
-  ConditionalOpr
   deriving (Eq, Show)
 
 type Ident = String
