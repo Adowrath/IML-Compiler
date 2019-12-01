@@ -1,9 +1,10 @@
 module IML.Parser.Parser where
 
+import           Control.Applicative
 import           IML.Parser.GeneralParser
 import qualified IML.Parser.SyntaxTree    as Syntax
-import           IML.Token.Tokens         as Tokens (Token)
-import qualified IML.Token.Tokens         as Tokens
+import           IML.Token.Tokens         (Token)
+import qualified IML.Token.Tokens         as T
 
 type Parser a = GenParser Token a
 
@@ -11,28 +12,80 @@ token :: Token -> Parser Token
 token = terminal
 
 commaList :: Parser a -> Parser [a]
-commaList = someSep Tokens.Comma
+commaList = someSep T.Comma
+
+-- | This parses as LPAREN [parseA {COMMA parseA}] RPAREN.
+parenList :: Parser a -> Parser [a]
+parenList parseA = token T.LParen *> manySep T.Comma parseA <* token T.RParen
 
 semiList :: Parser a -> Parser [a]
-semiList = someSep Tokens.Semicolon
+semiList = someSep T.Semicolon
+
+parseIdentifier :: Parser Syntax.Ident
+parseIdentifier = do
+  tok <- item
+  case tok of
+    (T.Ident ident) -> return ident
+    _               -> empty
+
+orEmpty :: Parser [a] -> Parser [a]
+orEmpty parseAs = parseAs <|> pure []
+
+parseLeftRecursive :: Parser Syntax.Expr -> Parser Syntax.BinaryOpr -> Parser Syntax.Expr
+parseLeftRecursive nextStep opParser = _refold <$> nextStep <*> _parseTerms
+  where
+    _refold :: Syntax.Expr -> [(Syntax.BinaryOpr, Syntax.Expr)] -> Syntax.Expr
+    _refold expr [] = expr
+    _refold left ((op, right):xs) = _refold (Syntax.BinaryExpr op left right) xs
+    _parseTerms :: Parser [(Syntax.BinaryOpr, Syntax.Expr)]
+    _parseTerms = many ((,) <$> opParser <*> nextStep)
+
+-- Internal helper
+parseOperatorToken :: Parser T.OpType
+parseOperatorToken = do
+  tok <- item
+  case tok of
+    (T.Operator op) -> return op
+    _               -> empty
 
 -- | program ::=
 --       PROGRAM IDENT progParamList
 --       [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
 parseProgram :: Parser Syntax.Program
-parseProgram = undefined
+parseProgram = do
+  _ <- token T.Program
+  programName <- parseIdentifier
+  programParams <- parseProgParamList
+  globalDecls <- orEmpty (token T.Global *> parseCpsDecl)
+  _ <- token T.Do
+  commands <- parseCpsCmd
+  _ <- token T.Endprogram
+  return $ Syntax.Program programName programParams globalDecls commands
+
+parseProgram' :: Parser Syntax.Program
+parseProgram' =
+  Syntax.Program <$> (token T.Program *> parseIdentifier) <*> parseProgParamList <*>
+  orEmpty (token T.Global *> parseCpsDecl) <*>
+  (token T.Do *> parseCpsCmd <* token T.Endprogram)
 
 -- | decl ::=
 --         stoDecl
 --       | funDecl
 --       | procDecl
 parseDecl :: Parser Syntax.Declaration
-parseDecl = undefined
+parseDecl = (Syntax.SDecl <$> parseStoDecl) <|> (Syntax.FDecl <$> parseFunDecl) <|> (Syntax.PDecl <$> parseProcDecl)
 
 -- | stoDecl ::=
 --         [CHANGEMODE] typedIdent
 parseStoDecl :: Parser Syntax.StoreDeclaration
-parseStoDecl = undefined
+parseStoDecl = Syntax.StoreDeclaration <$> optional _parseChangeMode <*> parseTypedIdent
+  where
+    _parseChangeMode = do
+      tok <- item
+      case tok of
+        (T.ChangeMode T.Const) -> return Syntax.ConstChange
+        (T.ChangeMode T.Var)   -> return Syntax.VarChange
+        _                      -> empty
 
 -- | funDecl ::=
 --         FUN IDENT paramList
@@ -40,105 +93,225 @@ parseStoDecl = undefined
 --         [GLOBAL globImps]
 --         [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
 parseFunDecl :: Parser Syntax.FunctionDeclaration
-parseFunDecl = undefined
+parseFunDecl = do
+  _ <- token T.Fun
+  funName <- parseIdentifier
+  funParams <- parseParamList
+  _ <- token T.Returns
+  returnDecl <- parseStoDecl
+  globalImports <- orEmpty (token T.Global *> parseGlobImps)
+  localStores <- orEmpty (token T.Local *> parseCpsStoDecl)
+  _ <- token T.Do
+  commands <- parseCpsCmd
+  _ <- token T.Endfun
+  return $ Syntax.FunctionDeclaration funName funParams returnDecl globalImports localStores commands
 
 -- | procDecl ::=
 --         PROC IDENT paramList
 --         [GLOBAL globImps]
 --         [LOCAL cpsStoDecl] DO cpsCmd ENDPROC
 parseProcDecl :: Parser Syntax.ProcedureDeclaration
-parseProcDecl = undefined
+parseProcDecl = do
+  _ <- token T.Proc
+  procName <- parseIdentifier
+  procParams <- parseParamList
+  globalImports <- orEmpty (token T.Global *> parseGlobImps)
+  localStores <- orEmpty (token T.Local *> parseCpsStoDecl)
+  _ <- token T.Do
+  commands <- parseCpsCmd
+  _ <- token T.Endproc
+  return $ Syntax.ProcedureDeclaration procName procParams globalImports localStores commands
 
 -- | globImps ::=
 --         globImp {COMMA globImp}
 parseGlobImps :: Parser [Syntax.GlobalImport]
-parseGlobImps = undefined
+parseGlobImps = commaList parseGlobImp
 
 -- | globImp ::=
 --         [FLOWMODE] [CHANGEMODE] IDENT
 parseGlobImp :: Parser Syntax.GlobalImport
-parseGlobImp = undefined
+parseGlobImp = Syntax.GlobalImport <$> optional _parseFlowMode <*> optional _parseChangeMode <*> parseIdentifier
+  where
+    _parseFlowMode = do
+      tok <- item
+      case tok of
+        (T.FlowMode T.In)    -> return Syntax.InFlow
+        (T.FlowMode T.InOut) -> return Syntax.InOutFlow
+        (T.FlowMode T.Out)   -> return Syntax.OutFlow
+        _                    -> empty
+    _parseChangeMode = do
+      tok <- item
+      case tok of
+        (T.ChangeMode T.Const) -> return Syntax.ConstChange
+        (T.ChangeMode T.Var)   -> return Syntax.VarChange
+        _                      -> empty
 
 -- | cpsDecl ::=
 --         decl {SEMICOLON decl}
 parseCpsDecl :: Parser [Syntax.Declaration]
-parseCpsDecl = undefined
+parseCpsDecl = semiList parseDecl
 
 -- | cpsStoDecl ::=
 --         stoDecl {SEMICOLON stoDecl}
 parseCpsStoDecl :: Parser [Syntax.StoreDeclaration]
-parseCpsStoDecl = undefined
+parseCpsStoDecl = semiList parseStoDecl
 
 -- | progParamList ::=
 --         LPAREN [progParam {COMMA progParam}] RPAREN
 parseProgParamList :: Parser [Syntax.ProgParam]
-parseProgParamList = undefined
+parseProgParamList = parenList parseProgParam
 
 -- | progParam ::=
 --         [FLOWMODE] [CHANGEMODE] typedIdent
 parseProgParam :: Parser Syntax.ProgParam
-parseProgParam = undefined
+parseProgParam = Syntax.ProgParam <$> optional _parseFlowMode <*> optional _parseChangeMode <*> parseTypedIdent
+  where
+    _parseFlowMode = do
+      tok <- item
+      case tok of
+        (T.FlowMode T.In)    -> return Syntax.InFlow
+        (T.FlowMode T.InOut) -> return Syntax.InOutFlow
+        (T.FlowMode T.Out)   -> return Syntax.OutFlow
+        _                    -> empty
+    _parseChangeMode = do
+      tok <- item
+      case tok of
+        (T.ChangeMode T.Const) -> return Syntax.ConstChange
+        (T.ChangeMode T.Var)   -> return Syntax.VarChange
+        _                      -> empty
 
 -- | paramList ::=
 --         LPAREN [param {COMMA param}] RPAREN
 parseParamList :: Parser [Syntax.Param]
-parseParamList = undefined
+parseParamList = parenList parseParam
 
 -- | param ::=
 --         [FLOWMODE] [MECHMODE] [CHANGEMODE] typedIdent
 parseParam :: Parser Syntax.Param
-parseParam = undefined
+parseParam =
+  Syntax.Param <$> optional _parseFlowMode <*> optional _parseMechMode <*> optional _parseChangeMode <*> parseTypedIdent
+  where
+    _parseFlowMode = do
+      tok <- item
+      case tok of
+        (T.FlowMode T.In)    -> return Syntax.InFlow
+        (T.FlowMode T.InOut) -> return Syntax.InOutFlow
+        (T.FlowMode T.Out)   -> return Syntax.OutFlow
+        _                    -> empty
+    _parseMechMode = do
+      tok <- item
+      case tok of
+        (T.MechMode T.Ref)  -> return Syntax.RefMech
+        (T.MechMode T.Copy) -> return Syntax.CopyMech
+        _                   -> empty
+    _parseChangeMode = do
+      tok <- item
+      case tok of
+        (T.ChangeMode T.Const) -> return Syntax.ConstChange
+        (T.ChangeMode T.Var)   -> return Syntax.VarChange
+        _                      -> empty
 
 -- | typedIdent ::=
 --         IDENT COLON ATOMTYPE
 parseTypedIdent :: Parser Syntax.TypedIdentifier
-parseTypedIdent = undefined
+parseTypedIdent = Syntax.TypedIdentifier <$> parseIdentifier <*> (token T.Colon *> _parseAtomType)
+  where
+    _parseAtomType = (Syntax.BoolType <$ token (T.Type T.BoolType)) <|> (Syntax.Int64Type <$ token (T.Type T.Int64Type))
 
 -- | cmd ::=
---         SKIP
---       | exprs BECOMES exprs
---       | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
---       | WHILE expr DO cpsCmd ENDWHILE
---       | CALL IDENT exprList [globInits]
---       | DEBUGIN expr
---       | DEBUGOUT expr
+--       SKIP
+--     | exprs BECOMES exprs
+--     | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
+--     | WHILE expr DO cpsCmd ENDWHILE
+--     | CALL IDENT exprList [globInits]
+--     | DEBUGIN expr
+--     | DEBUGOUT expr
 parseCmd :: Parser Syntax.Command
-parseCmd = undefined
+parseCmd = _parseSkip <|> _parseBecomes <|> _parseIf <|> _parseWhile <|> _parseCall <|> _parseDebugIn <|> _parseDebugOut
+  where
+    _parseSkip = Syntax.SkipCommand <$ token T.Skip
+    _parseBecomes = Syntax.AssignCommand <$> parseExprs <*> (token T.Becomes *> parseExprs)
+    _parseIf =
+      Syntax.IfCommand <$> (token T.If *> parseExpr) <*> (token T.Then *> parseCpsCmd) <*>
+      (token T.Else *> parseCpsCmd <* token T.Endif)
+    _parseWhile =
+      Syntax.WhileCommand <$> (token T.While *> parseExpr) <*> (token T.Do *> parseCpsCmd <* token T.Endwhile)
+    _parseCall = Syntax.CallCommand <$> (token T.Call *> parseIdentifier) <*> parseExprList <*> orEmpty parseGlobInits
+    _parseDebugIn = Syntax.DebugInCommand <$> (token T.DebugIn *> parseExpr)
+    _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
 
 -- | exprs ::=
 --         expr {COMMA expr}
 parseExprs :: Parser [Syntax.Expr]
-parseExprs = undefined
+parseExprs = commaList parseExpr
 
 -- | cpsCmd ::=
 --         cmd {SEMICOLON cmd}
 parseCpsCmd :: Parser [Syntax.Command]
-parseCpsCmd = undefined
+parseCpsCmd = semiList parseCmd
 
 -- | globInits ::=
 --         INIT idents
 parseGlobInits :: Parser [Syntax.Ident]
-parseGlobInits = undefined
+parseGlobInits = token T.Init *> parseIdents
 
 -- | idents ::=
 --         IDENT {COMMA IDENT}
 parseIdents :: Parser [Syntax.Ident]
-parseIdents = undefined
+parseIdents = commaList parseIdentifier
 
 -- | expr  ::=
 --         term1 [CONDOPR expr COLON expr]
 parseExpr :: Parser Syntax.Expr
-parseExpr = undefined
+parseExpr = do
+  condition <- parseTerm1
+  rest <- optional _parseRest
+  return $
+    case rest of
+      Nothing -> condition
+      Just (trueValue, falseValue) -> Syntax.ConditionalExpr condition trueValue falseValue
+  where
+    _parseRest = (,) <$> (token T.CondOpr *> parseExpr) <*> (token T.Colon *> parseExpr)
 
 -- | term1 ::=
 --         term2 [BOOLOPR term1]
 parseTerm1 :: Parser Syntax.Expr
-parseTerm1 = undefined
+parseTerm1 = do
+  left <- parseTerm2
+  rest <- optional _parseRest
+  return $
+    case rest of
+      Nothing          -> left
+      Just (op, right) -> Syntax.BinaryExpr op left right
+  where
+    _parseRest = do
+      opT <- parseOperatorToken
+      case opT of
+        T.COr  -> (,) <$> pure Syntax.COrOpr <*> parseTerm1
+        T.CAnd -> (,) <$> pure Syntax.CAndOpr <*> parseTerm1
+        _      -> empty
 
 -- | term2 ::=
 --         term3 [RELOPR term3]
 parseTerm2 :: Parser Syntax.Expr
-parseTerm2 = undefined
+parseTerm2 = do
+  left <- parseTerm3
+  rest <- optional _parseRest
+  return $
+    case rest of
+      Nothing          -> left
+      Just (op, right) -> Syntax.BinaryExpr op left right
+  where
+    _parseRest = do
+      opT <- parseOperatorToken
+      case opT of
+        T.GreaterThan       -> (,) <$> pure Syntax.GTOpr <*> parseTerm3
+        T.GreaterThanEquals -> (,) <$> pure Syntax.GTEOpr <*> parseTerm3
+        T.LessThan          -> (,) <$> pure Syntax.LTOpr <*> parseTerm3
+        T.LessThanEquals    -> (,) <$> pure Syntax.LTEOpr <*> parseTerm3
+        T.Equals            -> (,) <$> pure Syntax.EqOpr <*> parseTerm3
+        T.NotEquals         -> (,) <$> pure Syntax.NeqOpr <*> parseTerm3
+        _                   -> empty
 
 -- | term3 ::=
 --         term4 term3'
@@ -148,13 +321,34 @@ parseTerm2 = undefined
 -- Equivalent to:
 --   term3 ::= term4 {ADDOPR term4}
 parseTerm3 :: Parser Syntax.Expr
-parseTerm3 = undefined
+parseTerm3 = parseLeftRecursive parseTerm4 _parseAddOpr
+  where
+    _parseAddOpr :: Parser Syntax.BinaryOpr
+    _parseAddOpr = do
+      opT <- parseOperatorToken
+      case opT of
+        T.Plus  -> return Syntax.PlusOpr
+        T.Minus -> return Syntax.MinusOpr
+        _       -> empty
 
 -- | term4 ::=
---         factor
---       | term4 MULTOPR factor
+--         term4 term4'
+-- | term4' ::=
+--         MULTOPR factor term4'
+--       | Epsilon
+-- | term4 ::=
+--         factor {MULTOPR factor}
 parseTerm4 :: Parser Syntax.Expr
-parseTerm4 = undefined
+parseTerm4 = parseLeftRecursive parseFactor _parseMulOpr
+  where
+    _parseMulOpr :: Parser Syntax.BinaryOpr
+    _parseMulOpr = do
+      opT <- parseOperatorToken
+      case opT of
+        T.Times -> return Syntax.MultOpr
+        T.DivE  -> return Syntax.DivEOpr
+        T.ModE  -> return Syntax.ModEOpr
+        _       -> empty
 
 -- | factor ::=
 --         LITERAL
@@ -162,15 +356,42 @@ parseTerm4 = undefined
 --       | monadicOpr factor
 --       | LPAREN expr RPAREN
 parseFactor :: Parser Syntax.Expr
-parseFactor = undefined
+parseFactor = _parseLiteral <|> _parseNameOrCall <|> _parseUnary <|> _parseParens
+  where
+    _parseLiteral = do
+      tok <- item
+      case tok of
+        (T.BoolLit boolValue) -> return $ Syntax.LiteralExpr $ Syntax.BoolLiteral boolValue
+        (T.IntLit int64Value) -> return $ Syntax.LiteralExpr $ Syntax.Int64Literal int64Value
+        _ -> empty
+    _parseNameOrCall = do
+      ident <- parseIdentifier
+      _parseCallList ident <|> _parseWithInit ident <|> pure (Syntax.NameExpr ident False)
+      where
+        _parseCallList i = Syntax.FunctionCallExpr i <$> parseExprList
+        _parseWithInit i = do
+          _ <- token T.Init
+          return $ Syntax.NameExpr i True
+    _parseUnary = Syntax.UnaryExpr <$> parseMonadicOpr <*> parseFactor
+    _parseParens = do
+      _ <- token T.LParen
+      expr <- parseExpr
+      _ <- token T.RParen
+      return expr
 
 -- | exprList ::=
 --         LPAREN [expr {COMMA expr}] RPAREN
 parseExprList :: Parser [Syntax.Expr]
-parseExprList = undefined
+parseExprList = parenList parseExpr
 
 -- | monadicOpr ::=
 --         NOT
 --       | ADDOPR
 parseMonadicOpr :: Parser Syntax.UnaryOpr
-parseMonadicOpr = undefined
+parseMonadicOpr = do
+  op <- parseOperatorToken
+  case op of
+    T.Not   -> return Syntax.Not
+    T.Plus  -> return Syntax.UnaryPlus
+    T.Minus -> return Syntax.UnaryMinus
+    _       -> empty
