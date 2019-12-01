@@ -5,6 +5,7 @@ module IML.Token.Tokens where
 data Token =
     Operator OpType
     | LParen | RParen
+    | CondOpr
     | Comma | Semicolon | Colon
     | Init
     | Becomes -- :=

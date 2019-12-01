@@ -15,6 +15,7 @@ tokenize (')'          : xs) = RParen                      : tokenize xs
 tokenize (','          : xs) = Comma                       : tokenize xs
 tokenize (';'          : xs) = Semicolon                   : tokenize xs
 tokenize (':':'='      : xs) = Becomes                     : tokenize xs
+tokenize ('?'          : xs) = CondOpr                     : tokenize xs
 tokenize (':'          : xs) = Colon                       : tokenize xs
 tokenize ('*'          : xs) = Operator Times              : tokenize xs
 tokenize ('+'          : xs) = Operator Plus               : tokenize xs
