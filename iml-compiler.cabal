@@ -23,7 +23,8 @@ common shared-properties
 library
   import: shared-properties
   hs-source-dirs:      src
-  exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer, IML.Parser.Parser
+  exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer,
+                       IML.Parser.Parser, IML.Parser.GeneralParser, IML.Parser.SyntaxTree
 
 executable iml-compiler
   import: shared-properties
