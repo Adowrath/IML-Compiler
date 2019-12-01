@@ -52,7 +52,6 @@ parseOperatorToken = do
 --       PROGRAM IDENT progParamList
 --       [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
 parseProgram :: Parser Syntax.Program
-parseProgram :: Parser Syntax.Program
 parseProgram =
   Syntax.Program <$> (token T.Program *> parseIdentifier) <*> parseProgParamList <*>
   orEmpty (token T.Global *> parseCpsDecl) <*>
