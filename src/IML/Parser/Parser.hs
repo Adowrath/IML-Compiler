@@ -1,6 +1,7 @@
 module IML.Parser.Parser where
 
 import           IML.Parser.GeneralParser
+import qualified IML.Parser.SyntaxTree    as Syntax
 import           IML.Token.Tokens         (Token)
 
 type Parser a = GenParser Token a
@@ -8,127 +9,161 @@ type Parser a = GenParser Token a
 token :: Token -> Parser Token
 token = terminal
 
---token :: Token -> Parser Token
---token tok = item >>=
-{-
-program ::=
-    PROGRAM IDENT progParamList
-    [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
+-- | program ::=
+--       PROGRAM IDENT progParamList
+--       [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
+parseProgram :: Parser Syntax.Program
+parseProgram = undefined
 
-decl ::=
-      stoDecl
-    | funDecl
-    | procDecl
-stoDecl ::=
-      [CHANGEMODE] typedIdent
-funDecl ::=
-      FUN IDENT paramList
-      RETURNS stoDecl
-      [GLOBAL globImps]
-      [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
-procDecl ::=
-      PROC IDENT paramList
-      [GLOBAL globImps]
-      [LOCAL cpsStoDecl] DO cpsCmd ENDPROC
-globImps ::=
-      globImp {COMMA globImp}
-globImp ::=
-      [FLOWMODE] [CHANGEMODE] IDENT
-cpsDecl ::=
-      decl {SEMICOLON decl}
-cpsStoDecl ::=
-      stoDecl {SEMICOLON stoDecl}
+-- | decl ::=
+--         stoDecl
+--       | funDecl
+--       | procDecl
+parseDecl :: Parser Syntax.Declaration
+parseDecl = undefined
 
-progParamList ::=
-      LPAREN [progParam {COMMA progParam}] RPAREN
-progParam ::=
-      [FLOWMODE] [CHANGEMODE] typedIdent
-paramList ::=
-      LPAREN [param {COMMA param}] RPAREN
-param ::=
-      [FLOWMODE] [MECHMODE] [CHANGEMODE] typedIdent
-typedIdent ::=
-      IDENT COLON ATOMTYPE
+-- | stoDecl ::=
+--         [CHANGEMODE] typedIdent
+parseStoDecl :: Parser Syntax.StoreDeclaration
+parseStoDecl = undefined
 
-cmd ::=
-      SKIP
-    | exprs BECOMES exprs
-    | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
-    | WHILE expr DO cpsCmd ENDWHILE
-    | CALL IDENT exprList [globInits]
-    | DEBUGIN expr
-    | DEBUGOUT expr
-exprs ::=
-      expr {COMMA expr}
-cpsCmd ::=
-      cmd {SEMICOLON cmd}
-globInits ::=
-      INIT idents
-idents ::=
-      IDENT {COMMA IDENT}
+-- | funDecl ::=
+--         FUN IDENT paramList
+--         RETURNS stoDecl
+--         [GLOBAL globImps]
+--         [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
+parseFunDecl :: Parser Syntax.FunctionDeclaration
+parseFunDecl = undefined
 
-expr  ::=
-      term1 [CONDOPR expr COLON expr]
-term1 ::=
-      term2 [BOOLOPR term1]
-term2 ::=
-      term3 [RELOPR term3]
-term3 ::=
-      term4 term3'
-term3' ::=
-      ADDOPR term4 term3'
-    | Epsilon
-term4 ::=
-      factor
-    | term4 MULTOPR factor
-factor ::=
-      LITERAL
-    | IDENT [INIT | exprList]
-    | monadicOpr factor
-    | LPAREN expr RPAREN
-exprList ::=
-      LPAREN [expr {COMMA expr}] RPAREN
-monadicOpr ::=
-      NOT
-    | ADDOPR
--}
-{-
--}
-type Start = A
+-- | procDecl ::=
+--         PROC IDENT paramList
+--         [GLOBAL globImps]
+--         [LOCAL cpsStoDecl] DO cpsCmd ENDPROC
+parseProcDecl :: Parser Syntax.ProcedureDeclaration
+parseProcDecl = undefined
 
-type ParseResult r = Either String (r, [Terminal])
+-- | globImps ::=
+--         globImp {COMMA globImp}
+parseGlobImps :: Parser [Syntax.GlobalImport]
+parseGlobImps = undefined
 
-data Terminal
-  = TA
-  | TB
-  | TC
-  | TD
+-- | globImp ::=
+--         [FLOWMODE] [CHANGEMODE] IDENT
+parseGlobImp :: Parser Syntax.GlobalImport
+parseGlobImp = undefined
 
-data A
-  = A1 B
-  | A2
-  deriving (Eq, Show)
+-- | cpsDecl ::=
+--         decl {SEMICOLON decl}
+parseCpsDecl :: Parser [Syntax.Declaration]
+parseCpsDecl = undefined
 
-data B =
-  B
-  deriving (Eq, Show)
+-- | cpsStoDecl ::=
+--         stoDecl {SEMICOLON stoDecl}
+parseCpsStoDecl :: Parser [Syntax.StoreDeclaration]
+parseCpsStoDecl = undefined
 
-parseProgram :: [Terminal] -> Either String Start
-parseProgram xs = do
-  (a, xss) <- parseA xs
-  if not $ null xss
-    then Left "We failed to parse the entire input."
-    else Right a
+-- | progParamList ::=
+--         LPAREN [progParam {COMMA progParam}] RPAREN
+parseProgParamList :: Parser [Syntax.ProgParam]
+parseProgParamList = undefined
 
-parseA :: [Terminal] -> ParseResult A
-parseA (TA:xs) = do
-  (b, xss) <- parseB xs
-  case xss of
-    (TC:xsss) -> Right (A1 b, xsss)
-    _         -> Left "Expected c."
-parseA (TB:xs) = Right (A2, xs)
-parseA _ = Left "Failed parsing A."
+-- | progParam ::=
+--         [FLOWMODE] [CHANGEMODE] typedIdent
+parseProgParam :: Parser Syntax.ProgParam
+parseProgParam = undefined
 
-parseB :: [Terminal] -> ParseResult B
-parseB (TD:xs) = Right (B, xs)
-parseB _       = Left "Failed parsing B."
+-- | paramList ::=
+--         LPAREN [param {COMMA param}] RPAREN
+parseParamList :: Parser [Syntax.Param]
+parseParamList = undefined
+
+-- | param ::=
+--         [FLOWMODE] [MECHMODE] [CHANGEMODE] typedIdent
+parseParam :: Parser Syntax.Param
+parseParam = undefined
+
+-- | typedIdent ::=
+--         IDENT COLON ATOMTYPE
+parseTypedIdent :: Parser Syntax.TypedIdentifier
+parseTypedIdent = undefined
+
+-- | cmd ::=
+--         SKIP
+--       | exprs BECOMES exprs
+--       | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
+--       | WHILE expr DO cpsCmd ENDWHILE
+--       | CALL IDENT exprList [globInits]
+--       | DEBUGIN expr
+--       | DEBUGOUT expr
+parseCmd :: Parser Syntax.Command
+parseCmd = undefined
+
+-- | exprs ::=
+--         expr {COMMA expr}
+parseExprs :: Parser [Syntax.Expr]
+parseExprs = undefined
+
+-- | cpsCmd ::=
+--         cmd {SEMICOLON cmd}
+parseCpsCmd :: Parser [Syntax.Command]
+parseCpsCmd = undefined
+
+-- | globInits ::=
+--         INIT idents
+parseGlobInits :: Parser [Syntax.Ident]
+parseGlobInits = undefined
+
+-- | idents ::=
+--         IDENT {COMMA IDENT}
+parseIdents :: Parser [Syntax.Ident]
+parseIdents = undefined
+
+-- | expr  ::=
+--         term1 [CONDOPR expr COLON expr]
+parseExpr :: Parser Syntax.Expr
+parseExpr = undefined
+
+-- | term1 ::=
+--         term2 [BOOLOPR term1]
+parseTerm1 :: Parser Syntax.Expr
+parseTerm1 = undefined
+
+-- | term2 ::=
+--         term3 [RELOPR term3]
+parseTerm2 :: Parser Syntax.Expr
+parseTerm2 = undefined
+
+-- | term3 ::=
+--         term4 term3'
+--   term3' ::=
+--         ADDOPR term4 term3'
+--       | Epsilon
+-- Equivalent to:
+--   term3 ::= term4 {ADDOPR term4}
+parseTerm3 :: Parser Syntax.Expr
+parseTerm3 = undefined
+
+-- | term4 ::=
+--         factor
+--       | term4 MULTOPR factor
+parseTerm4 :: Parser Syntax.Expr
+parseTerm4 = undefined
+
+-- | factor ::=
+--         LITERAL
+--       | IDENT [INIT | exprList]
+--       | monadicOpr factor
+--       | LPAREN expr RPAREN
+parseFactor :: Parser Syntax.Expr
+parseFactor = undefined
+
+-- | exprList ::=
+--         LPAREN [expr {COMMA expr}] RPAREN
+parseExprList :: Parser [Syntax.Expr]
+parseExprList = undefined
+
+-- | monadicOpr ::=
+--         NOT
+--       | ADDOPR
+parseMonadicOpr :: Parser Syntax.UnaryOpr
+parseMonadicOpr = undefined
