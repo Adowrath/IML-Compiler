@@ -38,7 +38,7 @@ whileLoopExample =
 spec :: Spec
 spec =
   describe "the parser" $ do
-    it "should correctly parse a-b-c" $
+    it "should correctly parse a-b" $
       tryParse parseExpr [T.Ident "a", minusOp, T.Ident "b"] `shouldBe`
       ST.BinaryExpr ST.MinusOpr (ST.NameExpr "a" False) (ST.NameExpr "b" False)
     it "should correctly parse a-b-c as (a-b)-c" $
