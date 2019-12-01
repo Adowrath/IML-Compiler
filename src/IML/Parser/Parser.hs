@@ -52,18 +52,8 @@ parseOperatorToken = do
 --       PROGRAM IDENT progParamList
 --       [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
 parseProgram :: Parser Syntax.Program
-parseProgram = do
-  _ <- token T.Program
-  programName <- parseIdentifier
-  programParams <- parseProgParamList
-  globalDecls <- orEmpty (token T.Global *> parseCpsDecl)
-  _ <- token T.Do
-  commands <- parseCpsCmd
-  _ <- token T.Endprogram
-  return $ Syntax.Program programName programParams globalDecls commands
-
-parseProgram' :: Parser Syntax.Program
-parseProgram' =
+parseProgram :: Parser Syntax.Program
+parseProgram =
   Syntax.Program <$> (token T.Program *> parseIdentifier) <*> parseProgParamList <*>
   orEmpty (token T.Global *> parseCpsDecl) <*>
   (token T.Do *> parseCpsCmd <* token T.Endprogram)
@@ -93,34 +83,23 @@ parseStoDecl = Syntax.StoreDeclaration <$> optional _parseChangeMode <*> parseTy
 --         [GLOBAL globImps]
 --         [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
 parseFunDecl :: Parser Syntax.FunctionDeclaration
-parseFunDecl = do
-  _ <- token T.Fun
-  funName <- parseIdentifier
-  funParams <- parseParamList
-  _ <- token T.Returns
-  returnDecl <- parseStoDecl
-  globalImports <- orEmpty (token T.Global *> parseGlobImps)
-  localStores <- orEmpty (token T.Local *> parseCpsStoDecl)
-  _ <- token T.Do
-  commands <- parseCpsCmd
-  _ <- token T.Endfun
-  return $ Syntax.FunctionDeclaration funName funParams returnDecl globalImports localStores commands
+parseFunDecl =
+  Syntax.FunctionDeclaration <$> (token T.Fun *> parseIdentifier) <*> parseParamList <*>
+  (token T.Returns *> parseStoDecl) <*>
+  orEmpty (token T.Global *> parseGlobImps) <*>
+  orEmpty (token T.Local *> parseCpsStoDecl) <*>
+  (token T.Do *> parseCpsCmd <* token T.Endfun)
 
 -- | procDecl ::=
 --         PROC IDENT paramList
 --         [GLOBAL globImps]
 --         [LOCAL cpsStoDecl] DO cpsCmd ENDPROC
 parseProcDecl :: Parser Syntax.ProcedureDeclaration
-parseProcDecl = do
-  _ <- token T.Proc
-  procName <- parseIdentifier
-  procParams <- parseParamList
-  globalImports <- orEmpty (token T.Global *> parseGlobImps)
-  localStores <- orEmpty (token T.Local *> parseCpsStoDecl)
-  _ <- token T.Do
-  commands <- parseCpsCmd
-  _ <- token T.Endproc
-  return $ Syntax.ProcedureDeclaration procName procParams globalImports localStores commands
+parseProcDecl =
+  Syntax.ProcedureDeclaration <$> (token T.Proc *> parseIdentifier) <*> parseParamList <*>
+  orEmpty (token T.Global *> parseGlobImps) <*>
+  orEmpty (token T.Local *> parseCpsStoDecl) <*>
+  (token T.Do *> parseCpsCmd <* token T.Endproc)
 
 -- | globImps ::=
 --         globImp {COMMA globImp}
