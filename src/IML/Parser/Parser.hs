@@ -2,12 +2,19 @@ module IML.Parser.Parser where
 
 import           IML.Parser.GeneralParser
 import qualified IML.Parser.SyntaxTree    as Syntax
-import           IML.Token.Tokens         (Token)
+import           IML.Token.Tokens         as Tokens (Token)
+import qualified IML.Token.Tokens         as Tokens
 
 type Parser a = GenParser Token a
 
 token :: Token -> Parser Token
 token = terminal
+
+commaList :: Parser a -> Parser [a]
+commaList = someSep Tokens.Comma
+
+semiList :: Parser a -> Parser [a]
+semiList = someSep Tokens.Semicolon
 
 -- | program ::=
 --       PROGRAM IDENT progParamList

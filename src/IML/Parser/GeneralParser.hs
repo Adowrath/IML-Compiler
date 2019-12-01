@@ -67,6 +67,13 @@ satisfies p = do
     then return x
     else empty
 
+-- | Takes 1..* elements separated by the given token.
+someSep :: Eq t => t -> GenParser t a -> GenParser t [a]
+someSep separator parseA = (:) <$> parseA <*> parseSepA
+  where
+    parseSepA = many (terminal separator >> parseA)
+    --  Parse 'a's preceded by the separator, ignoring it.
+
 -- | Takes one element if it equals the given element.
 terminal :: Eq t => t -> GenParser t t
 terminal = satisfies . (==)
