@@ -1,4 +1,8 @@
-module IML.Parser.Parser where
+module IML.Parser.Parser
+(
+  module IML.Parser.Parser, 
+  parse
+) where
 
 import           Control.Applicative
 import           Data.Foldable            (foldl')
