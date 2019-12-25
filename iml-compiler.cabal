@@ -25,6 +25,13 @@ library
   hs-source-dirs:      src
   exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer,
                        IML.Parser.Parser, IML.Parser.GeneralParser, IML.Parser.SyntaxTree
+  build-depends:       iml-virtual-machine
+
+library iml-virtual-machine
+  import: shared-properties
+  hs-source-dirs:      lib-vm
+  exposed-modules:     BaseDecls, CheckedArithmetic, ErrorHandlingGeneric, Locations, VirtualMachineIO
+  build-depends:       array == 0.5.*
 
 executable iml-compiler
   import: shared-properties
