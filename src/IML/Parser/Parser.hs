@@ -1,6 +1,7 @@
 module IML.Parser.Parser where
 
 import           Control.Applicative
+import           Data.Foldable            (foldl')
 import           IML.Parser.GeneralParser
 import qualified IML.Parser.SyntaxTree    as Syntax
 import           IML.Token.Tokens         (Token)
@@ -35,8 +36,7 @@ parseLeftRecursive :: Parser Syntax.Expr -> Parser Syntax.BinaryOpr -> Parser Sy
 parseLeftRecursive nextStep opParser = _refold <$> nextStep <*> _parseTerms
   where
     _refold :: Syntax.Expr -> [(Syntax.BinaryOpr, Syntax.Expr)] -> Syntax.Expr
-    _refold expr [] = expr
-    _refold left ((op, right):xs) = _refold (Syntax.BinaryExpr op left right) xs
+    _refold = foldl' (uncurry . flip Syntax.BinaryExpr)
     _parseTerms :: Parser [(Syntax.BinaryOpr, Syntax.Expr)]
     _parseTerms = many ((,) <$> opParser <*> nextStep)
 

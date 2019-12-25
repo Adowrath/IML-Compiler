@@ -21,7 +21,7 @@ tokenizeFile p = do
 main :: IO ()
 main = do
   putStrLn "-----------------------------------------------"
-  putStrLn "- Welcome to the friendly IML Compiler suite. -"
+  putStrLn "- Welcome to the friendly IML Compiler suite! -"
   putStrLn "-        Written by Cyrill and Dominik        -"
   putStrLn "-----------------------------------------------"
   (command:args) <- getArgs
