@@ -1,4 +1,8 @@
-module IML.Parser.Parser where
+module IML.Parser.Parser
+(
+  module IML.Parser.Parser, 
+  parse
+) where
 
 import           Control.Applicative
 import           IML.Parser.GeneralParser
@@ -51,7 +55,6 @@ parseOperatorToken = do
 -- | program ::=
 --       PROGRAM IDENT progParamList
 --       [GLOBAL cpsDecl] DO cpsCmd ENDPROGRAM
-parseProgram :: Parser Syntax.Program
 parseProgram :: Parser Syntax.Program
 parseProgram =
   Syntax.Program <$> (token T.Program *> parseIdentifier) <*> parseProgParamList <*>
