@@ -3,9 +3,13 @@ global
   fun fact(n: int64)
     returns m: int64
   do
-    m init := n <= 0 ? 1 : n * fact(n - 1)
+    if n <= 0 then
+      m init := 1
+    else
+      m init := n * fact(n - 1)
+    endif
   endfun
-
+  
 do
   debugout fact(n)
 endprogram

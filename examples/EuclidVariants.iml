@@ -1,0 +1,48 @@
+// BasicIML V01
+// Edgar F.A. Lederer, FHNW, October 2018
+
+program EuclidVariants
+  (  in a:int1024   , in b:int1024    ,
+   out   g  :   int1024, out numIt:int32   
+      
+   )
+
+//((5:3-8:4),
+// [((5:6-17),ProgParam1 ((((5:9),"a"),((5:11-17),IntTy 1024)),Just ((5:6-7),InFlow),Nothing)),
+//  ((5:23-34),ProgParam1 ((((5:26),"b"),((5:28-34),IntTy 1024)),Just ((5:23-24),InFlow),Nothing)),
+//  ((6:4-23),ProgParam1 ((((6:10),"g"),((6:17-23),IntTy 1024)),Just ((6:4-6),OutFlow),Nothing)),
+//  ((6:26-40),ProgParam1 ((((6:30-34),"numIt"),((6:36-40),IntTy 32)),Just ((6:26-28),OutFlow),Nothing))
+// ]
+//)
+
+global
+  proc euclid
+    (in copy const a:int1024, in copy const b:int1024,
+     out copy var g:int1024, out copy var numIt:int32)
+    //requires true
+    //ensures g = gcd(a, b) >= 0
+  local
+    var g':int1024 ; var q:int1024
+  do
+    g init := a ; g' init := b ;
+    numIt init := 0 ;
+    q init := 0 ; // local
+    debugout g;
+    while g' /= 0 do
+      q := g divF g' ;
+      //q := g divF g' ;
+      //q := g divT g' ;
+      g := g - q * g' ;
+      call swap(g, g') ;
+      numIt := numIt + 1 ;
+      debugout g
+    endwhile ;
+    if g < 0 then g := -g endif
+  endproc ;
+
+  proc swap(inout ref var x:int1024, inout ref var y:int1024)
+  local const h:int1024
+  do h init := x ; x := y ; y := h endproc
+do
+  call euclid(a, b, g init, numIt init)
+endprogram

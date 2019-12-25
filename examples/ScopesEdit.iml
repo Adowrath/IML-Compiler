@@ -1,0 +1,35 @@
+program ScopesEdit()
+global
+    fun f(p1:int32) returns r1:int32
+    global g1, f
+    local
+        var l1:int32; g3:int32
+    do
+        debugout(g1); // global
+        //debugout(g2); // global, but not imported
+        g3 init := -3; // local (also global, but not imported)
+        debugout(g3);
+        debugout(p1); // local
+        l1 init := -1; // local
+        debugout(l1);
+        if p1 > 0 then
+            r1 init := p1 * f(p1 - 1)
+        else
+            r1 init := 1
+        endif;
+        debugout(r1);
+        debugout(f)
+    endfun ;
+
+    g1:int32 ;
+    g2:int32 ;
+    g3:int32 ;
+    f: int32 // two namespaces: one for stores, one for routines
+do
+    ((g1 init)) := 1;
+    debugin(g2 init);
+    g3 init := 3;
+    f init := 0;
+    debugout(f(g2));
+    debugout(f(f(f)))
+endprogram

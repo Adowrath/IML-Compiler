@@ -1,9 +1,10 @@
 module IML.Token.Tokenizer where
 
 import Data.Maybe (fromMaybe)
+import Text.Printf
 import IML.Token.Tokens
 
-tokenize :: String -> TokenList
+tokenize :: String -> [Token]
 tokenize []                  = []
 tokenize ('\t'         :  _) = error "We don't like tabs. Actually, we do, but eh."
 tokenize ('/':'/'      : xs) = tokenize $ dropWhile ('\n' /=) xs -- Comments!
@@ -14,6 +15,7 @@ tokenize (')'          : xs) = RParen                      : tokenize xs
 tokenize (','          : xs) = Comma                       : tokenize xs
 tokenize (';'          : xs) = Semicolon                   : tokenize xs
 tokenize (':':'='      : xs) = Becomes                     : tokenize xs
+tokenize ('?'          : xs) = CondOpr                     : tokenize xs
 tokenize (':'          : xs) = Colon                       : tokenize xs
 tokenize ('*'          : xs) = Operator Times              : tokenize xs
 tokenize ('+'          : xs) = Operator Plus               : tokenize xs
@@ -37,7 +39,7 @@ tokenize (c               : xs)
           (identRest, restLine) = span isIdentifierPart xs
 
 -- This is the error case
-tokenize xs = error ("Error parsing: " ++ show xs)
+tokenize xs = error $ printf "Unexpected token: %c, rest of string was: \n%s" (head xs) xs
 
 -- |
 -- Turns a given name either into a keyword token
@@ -46,7 +48,7 @@ tokenize xs = error ("Error parsing: " ++ show xs)
 keywordOrIdentifier :: String -> Token
 keywordOrIdentifier name = fromMaybe (Ident name) $ lookup name keywordList
 
-tokenizeNumber :: String -> TokenList
+tokenizeNumber :: String -> [Token]
 tokenizeNumber str = IntLit (read number) : tokenize rest
   where
     (number, rest) = tokenizeInner True str

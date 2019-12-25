@@ -1,14 +1,11 @@
 module IML.Token.Tokens where
 
 -- |
--- Simple alias for the list of tokens.
-type TokenList = [Token]
-
--- |
 -- Tokens are the smallest useful units of IML.
 data Token =
     Operator OpType
     | LParen | RParen
+    | CondOpr
     | Comma | Semicolon | Colon
     | Init
     | Becomes -- :=
