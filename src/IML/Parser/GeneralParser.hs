@@ -4,7 +4,6 @@
 module IML.Parser.GeneralParser where
 
 import           Control.Applicative
-import           IML.Token.Tokens    (Token)
 
 -- |
 -- General parser defined over a component type 't'
