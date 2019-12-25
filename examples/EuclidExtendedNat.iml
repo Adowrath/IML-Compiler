@@ -1,0 +1,72 @@
+// BasicIML V01
+// Edgar F.A. Lederer, FHNW
+// 2017, December 2018
+
+program EuclidExtendedNat
+  (in a:int64, in b:int64,
+   out g:int64, out u:int64, out v:int64, out u':int64, out v':int64,
+   out sign:int32, out numIt:int32)
+global
+  fun abs(x:int64) returns y:int64
+    //ensures x >= 0 ==> y = x &? x <= 0 ==> y = -x
+  do
+    if x >= 0 then y init := x else y init := -x endif
+  endfun;
+
+  fun gcd(x:int64, y:int64) returns g:int64
+    //requires 0 <= x &? 0 <= y
+  do
+    if y = 0 then g init := x else g init := gcd(y, x modE y) endif
+  endfun;
+
+  proc euclidExtendedNatWOSign
+    (in copy const a:int64, in copy const b:int64,
+     out copy var g :int64,
+     out copy var u :int64, out copy var v :int64,
+     out copy var u':int64, out copy var v':int64,
+     out copy var sign:int32, out var numIt:int32)
+    //requires 0 <= a &? 0 <= b;
+    //ensures 0 <= g = gcd(a, b);
+    //ensures abs(sign) = 1;
+    //ensures -sign * u' * g = b; // Pu'
+    //ensures +sign * v' * g = a; // Pv'
+    //ensures u  * a + v  * b = g; // Puv
+    //ensures u' * a + v' * b = 0; // Pu'v'
+    //ensures u * v' - u' * v = sign; // Psign
+    //ensures numIt >= 0
+  local
+    var g':int64 ; var q:int64
+  do
+    g init := a ; g' init := b ;
+    u init := 1 ; u' init := 0 ;
+    v init := 0 ; v' init := 1 ;
+    sign init := +1;
+    numIt init := 0;
+    debugout gcd(g, g') ;
+    q init := 0 ; // local
+    while g' > 0 do
+        //invar 0 <= g &? 0 <= g';
+        //invar gcd(g, g') = gcd(a, b);
+        //invar abs(sign) = 1;
+        //invar -sign * u' * g + sign * u * g' = b;
+        //invar +sign * v' * g - sign * v * g' = a;
+        //invar u  * a + v  * b = g;
+        //invar u' * a + v' * b = g';
+        //invar u * v' - u' * v = sign;
+        //invar numIt >= 0
+      q := g divE g' ;
+      g := g - q * g'  ; u := u - q * u'  ; v := v - q * v' ;
+      call swap(g, g') ; call swap(u, u') ; call swap(v, v') ;
+      sign := -sign ;
+      numIt := numIt + 1 ;
+      debugout gcd(g, g')
+    endwhile
+  endproc ;
+
+  proc swap(inout ref var x:int64, inout ref var y:int64)
+  local const h:int64
+  do h init := x ; x := y ; y := h endproc
+do
+  call euclidExtendedNatWOSign
+    (a, b, g init, u init, v init, u' init, v' init, sign init, numIt init)
+endprogram
