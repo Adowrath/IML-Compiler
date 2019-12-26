@@ -43,8 +43,8 @@ genProc :: ProcedureDeclaration -> VMProgram
 genFuncMeta :: FunctionDeclaration -> FunctionMetadata
 genFuncMeta (FunctionDeclaration _ Params Return Globals _ _) = 
     FunctionMetadata{ 
-        inGlobals = Globals, 
-        inParams = Params, 
+        inGlobals = Globals, -- sind nur InFlow
+        inParams = Params, -- sind nur InFlow
         returnParam = Return
     }
 
@@ -66,6 +66,30 @@ genAssign :: Command -> VMProgram
 
 
 genExpr :: Expr -> VMProgram
+genExpr | (LiteralExpr (Literal ty val)) = [(AllocBlock 1), (LoadIm vmty val)] 
+                                           where vmty = case ty of BoolLiteral  -> IntVmTy
+                                                                   Int64Literal -> Int64VmTy
+        | (FunctionCallExpr Ident ExprList) -- ??
+        | (NameExpr Ident Bool) = "Lade die Variable auf den Stack"
+        | (UnaryExpr UnaryOpr Expr) = (genExpr Expr) ++ [operation]
+                                      where operation = case UnaryOpr of Not          -> -- Unklar
+                                                                         UnaryPlus    -> -- Unklar
+                                                                         UnaryMinus   -> -- Unklar
+        | (BinaryExpr BinaryOpr Expr1 Expr2) = (genExpr Expr1) ++ (genExpr Expr2) ++ [operation]
+                                               where operation = case BinaryOpr of MultOpr    ->  (Mul Int64VmTy 0) -- 0 ist die Location ??
+                                                                                   DivEOpr    ->  (DivEuclid Int64VmTy 0)
+                                                                                   ModEOpr    ->  (ModEuclid Int64VmTy 0)
+                                                                                   PlusOpr    ->  (Add Int64VmTy 0)
+                                                                                   MinusOpr   ->  (Sub Int64VmTy 0)
+                                                                                   LTOpr      ->  (Lt Int64VmTy)
+                                                                                   GTOpr      ->  (Gt Int64VmTy)
+                                                                                   LTEOpr     ->  (Le Int64VmTy)
+                                                                                   GTEOpr     ->  (Ge Int64VmTy)
+                                                                                   EqOpr      ->  (Eq Int64VmTy)
+                                                                                   NeqOpr     ->  (Ne Int64VmTy)
+                                                                                   CAndOpr    ->  (?? Int64VmTy) -- Was ist das
+                                                                                   COrOpr     ->  (?? Int64VmTy) -- Was ist das
+        | (ConditionalExpr Expr1 Expr2 Expr3) = (genExpr Expr1) "condJump if EXPR1 then EXPR2 else EXPR3"
 
 
 genMain :: [] -> VMProgram
