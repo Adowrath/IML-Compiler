@@ -15,15 +15,9 @@ data ProcedureMetadata = ProcedureMetadata {
 } 
 
 genVMProgram :: Syntax.Program -> VMProgram -- Main Function
-
-
-checkFunProc :: [] -> bool
-
-
-checkMain :: [] -> bool
-
-
-checkProgramHead :: [] -> bool
+genVMProgram = do 
+    scopeChecks
+    typeChecks
 
 
 genFunc :: FunctionDeclaration -> VMProgram
