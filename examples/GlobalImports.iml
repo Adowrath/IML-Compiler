@@ -1,0 +1,17 @@
+program GlobalInits1()
+global
+  var g1: int64;
+  var g2: int64;
+
+  proc p(in copy const x: int64)
+  global
+    out const g1,
+    out const g2
+  do
+    g1 init := x * x;
+    g2 init := -g1
+  endproc
+do
+  call p(5) init g1, g2;  debugout g1; debugout g2;
+  call p(6);              debugout g1; debugout g2
+endprogram
