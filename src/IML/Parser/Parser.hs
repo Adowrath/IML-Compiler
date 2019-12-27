@@ -40,7 +40,7 @@ parseLeftRecursive :: Parser Syntax.Expr -> Parser Syntax.BinaryOpr -> Parser Sy
 parseLeftRecursive nextStep opParser = _refold <$> nextStep <*> _parseTerms
   where
     _refold :: Syntax.Expr -> [(Syntax.BinaryOpr, Syntax.Expr)] -> Syntax.Expr
-    _refold = foldl' (uncurry . flip Syntax.BinaryExpr)
+    _refold = foldl' (uncurry . flip (Syntax.BinaryExpr Syntax.Untyped))
     _parseTerms :: Parser [(Syntax.BinaryOpr, Syntax.Expr)]
     _parseTerms = many ((,) <$> opParser <*> nextStep)
 
@@ -251,7 +251,7 @@ parseExpr = do
   return $
     case rest of
       Nothing -> condition
-      Just (trueValue, falseValue) -> Syntax.ConditionalExpr condition trueValue falseValue
+      Just (trueValue, falseValue) -> Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue
   where
     _parseRest = (,) <$> (token T.CondOpr *> parseExpr) <*> (token T.Colon *> parseExpr)
 
@@ -264,7 +264,7 @@ parseTerm1 = do
   return $
     case rest of
       Nothing          -> left
-      Just (op, right) -> Syntax.BinaryExpr op left right
+      Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
   where
     _parseRest = do
       opT <- parseOperatorToken
@@ -282,7 +282,7 @@ parseTerm2 = do
   return $
     case rest of
       Nothing          -> left
-      Just (op, right) -> Syntax.BinaryExpr op left right
+      Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
   where
     _parseRest = do
       opT <- parseOperatorToken
@@ -343,18 +343,18 @@ parseFactor = _parseLiteral <|> _parseNameOrCall <|> _parseUnary <|> _parseParen
     _parseLiteral = do
       tok <- item
       case tok of
-        (T.BoolLit boolValue) -> return $ Syntax.LiteralExpr $ Syntax.BoolLiteral boolValue
-        (T.IntLit int64Value) -> return $ Syntax.LiteralExpr $ Syntax.Int64Literal int64Value
+        (T.BoolLit boolValue) -> return $ Syntax.LiteralExpr Syntax.BoolType $ Syntax.BoolLiteral boolValue
+        (T.IntLit int64Value) -> return $ Syntax.LiteralExpr Syntax.Int64Type $ Syntax.Int64Literal int64Value
         _ -> empty
     _parseNameOrCall = do
       ident <- parseIdentifier
-      _parseCallList ident <|> _parseWithInit ident <|> pure (Syntax.NameExpr ident False)
+      _parseCallList ident <|> _parseWithInit ident <|> pure (Syntax.NameExpr Syntax.Untyped ident False)
       where
-        _parseCallList i = Syntax.FunctionCallExpr i <$> parseExprList
+        _parseCallList i = Syntax.FunctionCallExpr Syntax.Untyped i <$> parseExprList
         _parseWithInit i = do
           _ <- token T.Init
-          return $ Syntax.NameExpr i True
-    _parseUnary = Syntax.UnaryExpr <$> parseMonadicOpr <*> parseFactor
+          return $ Syntax.NameExpr Syntax.Untyped i True
+    _parseUnary = Syntax.UnaryExpr Syntax.Untyped <$> parseMonadicOpr <*> parseFactor
     _parseParens = do
       _ <- token T.LParen
       expr <- parseExpr

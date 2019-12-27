@@ -158,7 +158,7 @@ data MechMode
 data AtomicType
   = BoolType
   | Int64Type
-  | UnTyped
+  | Untyped
   deriving (Eq, Show)
 
 data Literal
