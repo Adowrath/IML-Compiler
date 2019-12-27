@@ -131,12 +131,12 @@ data Command
 --       NOT
 --     | ADDOPR
 data Expr
-  = LiteralExpr Literal
-  | FunctionCallExpr Ident [Expr]
-  | NameExpr Ident Bool -- Variable names, bool = init or not
-  | UnaryExpr UnaryOpr Expr
-  | BinaryExpr BinaryOpr Expr Expr
-  | ConditionalExpr Expr Expr Expr
+  = LiteralExpr AtomicType Literal
+  | FunctionCallExpr AtomicType Ident [Expr]
+  | NameExpr AtomicType Ident Bool -- Variable names, bool = init or not
+  | UnaryExpr AtomicType UnaryOpr Expr
+  | BinaryExpr AtomicType BinaryOpr Expr Expr
+  | ConditionalExpr AtomicType Expr Expr Expr
   deriving (Eq, Show)
 
 data ChangeMode
@@ -158,6 +158,7 @@ data MechMode
 data AtomicType
   = BoolType
   | Int64Type
+  | UnTyped
   deriving (Eq, Show)
 
 data Literal
