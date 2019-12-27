@@ -33,16 +33,31 @@ typeCheckCommands :: Context -> [Command] -> Bool -- Tailrecursion
 typeCheckCommands c l = typeCheckMain' True c l
     where typeCheckCommands' acc _  []                                                 = acc
           typeCheckCommands' acc co ((SkipCommand)                          :commands) = typeCheckCommands' acc co commands
-          typeCheckCommands' acc co ((AssignCommand exprLi1 exprLi2)        :commands) = typeCheckCommands' (zipWith (\e1 -> \e2 -> typeCheck2Expr co e1 e2) exprLi1 exprLi2) co commands
+          typeCheckCommands' acc co ((AssignCommand exprLi1 exprLi2)        :commands) = typeCheckCommands' (checkTrue (zipWith (\e1 -> \e2 -> getExprType e1 == getExprType e2) exprLi1 exprLi2) && checkScope co e1 && checkScope co e2) co commands
           typeCheckCommands' acc co ((IfCommand expr commands1 commands2)   :commands) = typeCheckCommands' ((typeCheckExpr co expr) && (typeCheckCommands co commands1) && (typeCheckCommands co commands2)) co commands
           typeCheckCommands' acc co ((WhileCommand expr commands1)          :commands) = typeCheckCommands' ((typeCheckExpr co expr) && (typeCheckCommands co commands1)) co commands
-          typeCheckCommands' acc co ((CallCommand Ident exprLi [Ident])     :commands) = typeCheckCommands' (typeCheckFunctionCallParams co exprLi) co commands -- Unklar was [Ident] ist ???
+          typeCheckCommands' acc co ((CallCommand ident exprLi [Ident])     :commands) = typeCheckCommands' (typeCheckProcedureCallParams co exprLi && scopeCheck co ident) co commands -- Unklar was [Ident] ist ??? -- Ist ein Aufruf für eine Prozedur
           typeCheckCommands' acc co ((DebugInCommand expr)                  :commands) = typeCheckCommands' (typeCheckExpr co expr) co commands
           typeCheckCommands' acc co ((DebugOutCommand expr)                 :commands) = typeCheckCommands' (typeCheckExpr co expr) co commands
+          checkTrue (b:bs) = b && checkTrue bs
 
+typeCheckExpr :: Context -> [Expr] -> Bool -- Check for Scope and for Equal Type, left and right
+typeCheckExpr c l = typeCheckExpr' True c l
+    where typeCheckExpr' acc _  []                                          = acc
+          typeCheckExpr' acc co ((LiteralExpr Literal)              :exprs) = typeCheckExpr' acc co expers -- keine checks nötig bei einem einzelne Type und da kein Ident, auch kein Scope check nötig
+          typeCheckExpr' acc co ((FunctionCallExpr ident exprli)    :exprs) = typeCheckExpr' (typeCheckFunctionCallParams co exprli && scopeCheck co ident) co exprs-- ist ein Aufruf für eine Funktion
+          typeCheckExpr' acc co ((NameExpr ident isBool)            :exprs) = typeCheckExpr' (scopeCheck co ident) -- Cyrill Fragen wegen Parameters welche den Typen vor init nicht beeinflussen
+          typeCheckExpr' acc co ((UnaryExpr unaryOpr expr)          :exprs) = typeCheckExpr' () co exprs
+          typeCheckExpr' acc co ((BinaryExpr BinaryOpr Expr Expr)   :exprs) = typeCheckExpr'
+          typeCheckExpr' acc co ((ConditionalExpr Expr Expr Expr)   :exprs) = typeCheckExpr'
 
-
-
+getExprType :: Expr -> AtomicType -- Problem With AtomicType and Literal Type
+getExprType (LiteralExpr (typename ty))         =
+getExprType (FunctionCallExpr ident [Expr])     =
+getExprType (NameExpr ident isBool)             =
+getExprType (UnaryExpr unaryOpr expr)           =
+getExprType (BinaryExpr BinaryOpr Expr Expr)    =
+getExprType (ConditionalExpr Expr Expr Expr)    =
 
 
 typeChecks :: [] -> bool
