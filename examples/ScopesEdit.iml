@@ -1,9 +1,10 @@
 program ScopesEdit()
+// alle int64 sind ursprünglich int32
 global
-    fun f(p1:int32) returns r1:int32
+    fun f(p1:int64) returns r1:int64
     global g1, f
     local
-        var l1:int32; g3:int32
+        var l1:int64; g3:int64
     do
         debugout(g1); // global
         //debugout(g2); // global, but not imported
@@ -21,10 +22,10 @@ global
         debugout(f)
     endfun ;
 
-    g1:int32 ;
-    g2:int32 ;
-    g3:int32 ;
-    f: int32 // two namespaces: one for stores, one for routines
+    g1:int64 ;
+    g2:int64 ;
+    g3:int64 ;
+    f: int64 // two namespaces: one for stores, one for routines
 do
     ((g1 init)) := 1;
     debugin(g2 init);
