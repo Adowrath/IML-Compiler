@@ -12,16 +12,29 @@ import BaseDecls
 import CheckedArithmetic
 import ErrorHandlingGeneric
 import Locations
+import Text.Read (readMaybe)
 --import Scanner(readBool, readInteger)
 
 import Data.Array
 
 -- version for students without using Scanner
 readBool :: String -> Maybe Bool
-readBool = error "not yet implemented"
+readBool "true" = Just True
+readBool "True" = Just True
+readBool "y" = Just True
+readBool "Y" = Just True
+readBool "yes" = Just True
+readBool "Yes" = Just True
+readBool "false" = Just False
+readBool "False" = Just False
+readBool "n" = Just False
+readBool "N" = Just False
+readBool "no" = Just False
+readBool "No" = Just False
+readBool _ = Nothing
 
 readInteger :: String -> Maybe Integer
-readInteger = error "not yet implemented"
+readInteger = readMaybe
 
 boolToInt :: Bool -> Int
 boolToInt False = 0
