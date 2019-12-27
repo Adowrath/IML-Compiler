@@ -198,7 +198,10 @@ parseParam =
 parseTypedIdent :: Parser Syntax.TypedIdentifier
 parseTypedIdent = Syntax.TypedIdentifier <$> parseIdentifier <*> (token T.Colon *> _parseAtomType)
   where
-    _parseAtomType = (Syntax.BoolType <$ token (T.Type T.BoolType)) <|> (Syntax.Int64Type <$ token (T.Type T.Int64Type))
+    _parseAtomType = (Syntax.BoolType <$ token (T.Type T.BoolType))
+                 <|> (Syntax.Int64Type <$ token (T.Type T.Int64Type))
+                 <|> (error "int32 not supported yet" <$ token (T.Type T.Int32Type))
+                 <|> (error "int1024 not supported yet" <$ token (T.Type T.Int1024Type))
 
 -- | cmd ::=
 --       SKIP

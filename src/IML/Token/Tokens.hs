@@ -54,7 +54,7 @@ data MechMode = Copy | Ref deriving (Show, Eq)
 -- | Defines whether a variable is a constant or mutable.
 data ChangeMode = Const | Var deriving (Show, Eq)
 -- | The different types of primitives IML supports.
-data Type = BoolType | Int64Type deriving (Show, Eq)
+data Type = BoolType | Int32Type | Int64Type | Int1024Type deriving (Show, Eq)
 
 -- | A simple lookup list of all predefined keywords.
 keywordList :: [(String, Token)]
@@ -80,7 +80,9 @@ keywordList =
     , ("in",         FlowMode In     )
     , ("init",       Init            )
     , ("inout",      FlowMode InOut  )
+    , ("int32",      Type Int32Type  )
     , ("int64",      Type Int64Type  )
+    , ("int1024",    Type Int1024Type)
     , ("local",      Local           )
     , ("modE",       Operator ModE   )
     , ("not",        Operator Not    )
