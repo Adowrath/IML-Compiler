@@ -254,53 +254,23 @@ getIdentFromParam (Param _ _ _ (TypedIdentifier i _)) = i
 --
 --   inout parameters cannot be const
 --   in ref params cannot be var.
-fillModes :: S.Param -> S.Param
-fillModes (S.Param inMode mechMode changeMode typedIdent) = S.Param (Just newIn) (Just newMech) (Just newChange) typedIdent
-  where (newIn, newMech, newChange) = case (inMode, mechMode, changeMode) of
+fillParamModes :: S.Param -> S.Param
+fillParamModes (S.Param flowMode mechMode changeMode typedIdent) = S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+  where (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
           (Just S.InOutFlow , _               , Just S.ConstChange) -> error "inout <cm> const is not allowed"
           (Just S.InFlow    , Just S.RefMech  , Just S.VarChange)   -> error "in    ref  var   is not allowed"
           -- no flowmode with "ref var" defaults to "inout". TODO: Maybe this should be an error?
           (Nothing          , Just S.RefMech  , Just S.VarChange)   -> (S.InOutFlow , S.RefMech  , S.VarChange  )
 
-          -- Standard "in copy const"
-          (Nothing          , Nothing         , Nothing)            -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Nothing          , Nothing         , Just S.ConstChange) -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Nothing          , Just S.CopyMech , Nothing)            -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Nothing          , Just S.CopyMech , Just S.ConstChange) -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Just S.InFlow    , Nothing         , Nothing)            -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Just S.InFlow    , Nothing         , Just S.ConstChange) -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Just S.InFlow    , Just S.CopyMech , Nothing)            -> (S.InFlow    , S.CopyMech , S.ConstChange)
-          (Just S.InFlow    , Just S.CopyMech , Just S.ConstChange) -> (S.InFlow    , S.CopyMech , S.ConstChange)
+          -- Defaults for inout are: copy var. const is not allowed. (handled above)
+          (Just S.InOutFlow , _ , _) ->
+            (S.InOutFlow,
+              S.CopyMech `fromMaybe` mechMode,
+              S.VarChange `fromMaybe` changeMode)
 
-          -- "in copy var" allowed
-          (Nothing          , Nothing         , Just S.VarChange)   -> (S.InFlow    , S.CopyMech , S.VarChange  )
-          (Nothing          , Just S.CopyMech , Just S.VarChange)   -> (S.InFlow    , S.CopyMech , S.VarChange  )
-          (Just S.InFlow    , Nothing         , Just S.VarChange)   -> (S.InFlow    , S.CopyMech , S.VarChange  )
-          (Just S.InFlow    , Just S.CopyMech , Just S.VarChange)   -> (S.InFlow    , S.CopyMech , S.VarChange  )
-
-          -- "in ref const" allowed, but not "in ref var" (see above)
-          (Nothing          , Just S.RefMech  , Nothing)            -> (S.InFlow    , S.RefMech  , S.ConstChange)
-          (Nothing          , Just S.RefMech  , Just S.ConstChange) -> (S.InFlow    , S.RefMech  , S.ConstChange)
-          (Just S.InFlow    , Just S.RefMech  , Nothing)            -> (S.InFlow    , S.RefMech  , S.ConstChange)
-          (Just S.InFlow    , Just S.RefMech  , Just S.ConstChange) -> (S.InFlow    , S.RefMech  , S.ConstChange)
-
-          -- "inout copy var" and "inout ref var"
-          (Just S.InOutFlow , Nothing         , Nothing)            -> (S.InOutFlow , S.CopyMech , S.VarChange  )
-          (Just S.InOutFlow , Just S.CopyMech , Nothing)            -> (S.InOutFlow , S.CopyMech , S.VarChange  )
-          (Just S.InOutFlow , Nothing         , Just S.VarChange)   -> (S.InOutFlow , S.CopyMech , S.VarChange  )
-          (Just S.InOutFlow , Just S.CopyMech , Just S.VarChange)   -> (S.InOutFlow , S.CopyMech , S.VarChange  )
-          (Just S.InOutFlow , Just S.RefMech  , Nothing)            -> (S.InOutFlow , S.RefMech  , S.VarChange  )
-          (Just S.InOutFlow , Just S.RefMech  , Just S.VarChange)   -> (S.InOutFlow , S.RefMech  , S.VarChange  )
-
-          -- "out copy const" and "out copy var"
-          (Just S.OutFlow   , Nothing         , Nothing)            -> (S.OutFlow   , S.CopyMech , S.ConstChange)
-          (Just S.OutFlow   , Just S.CopyMech , Nothing)            -> (S.OutFlow   , S.CopyMech , S.ConstChange)
-          (Just S.OutFlow   , Nothing         , Just S.ConstChange) -> (S.OutFlow   , S.CopyMech , S.ConstChange)
-          (Just S.OutFlow   , Just S.CopyMech , Just S.ConstChange) -> (S.OutFlow   , S.CopyMech , S.ConstChange)
-          (Just S.OutFlow   , Nothing         , Just S.VarChange)   -> (S.OutFlow   , S.CopyMech , S.VarChange  )
-          (Just S.OutFlow   , Just S.CopyMech , Just S.VarChange)   -> (S.OutFlow   , S.CopyMech , S.VarChange  )
-
-          -- "out ref var" and "out ref const"
-          (Just S.OutFlow   , Just S.RefMech  , Nothing)            -> (S.OutFlow   , S.RefMech  , S.ConstChange)
-          (Just S.OutFlow   , Just S.RefMech  , Just S.ConstChange) -> (S.OutFlow   , S.RefMech  , S.ConstChange)
-          (Just S.OutFlow   , Just S.RefMech  , Just S.VarChange)   -> (S.OutFlow   , S.RefMech  , S.VarChange  )
+          -- Rest of the defaults:
+          -- in is default, except for "ref var", which was handled above.
+          (_, _, _) ->
+            (S.InFlow `fromMaybe` flowMode,
+              S.CopyMech `fromMaybe` mechMode,
+              S.ConstChange `fromMaybe` changeMode)
