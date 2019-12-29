@@ -5,4 +5,4 @@ do
   while r >= n do
     q, r := q + 1, r - n
   endwhile
-endproc;
+endproc

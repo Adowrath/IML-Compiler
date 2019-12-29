@@ -1,0 +1,16 @@
+program SimpleAdd(
+  in const a: int64,
+  in const b: int64,
+  out const c: int64
+)
+global
+  fun add(in copy const x: int64,
+          in copy const y: int64)
+  returns z: int64
+  do
+    z init := x + y
+  endfun
+
+do
+  c init := add(a, b)
+endprogram
