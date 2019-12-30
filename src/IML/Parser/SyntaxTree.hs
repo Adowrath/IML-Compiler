@@ -173,19 +173,19 @@ data UnaryOpr
   deriving (Eq, Show)
 
 data BinaryOpr
-  = MultOpr
-  | DivEOpr
-  | ModEOpr
-  | PlusOpr
-  | MinusOpr
-  | LTOpr
-  | GTOpr
-  | LTEOpr
-  | GTEOpr
-  | EqOpr
-  | NeqOpr
-  | CAndOpr
-  | COrOpr
+  = MultOpr     -- Int64Type
+  | DivEOpr     -- Int64Type
+  | ModEOpr     -- Int64Type
+  | PlusOpr     -- Int64Type
+  | MinusOpr    -- Int64Type
+  | LTOpr       -- Int64Type
+  | GTOpr       -- Int64Type
+  | LTEOpr      -- Int64Type
+  | GTEOpr      -- Int64Type
+  | EqOpr       -- Int64Type & BoolType
+  | NeqOpr      -- Int64Type & BoolType
+  | CAndOpr     -- BoolType
+  | COrOpr      -- BoolType
   deriving (Eq, Show)
 
 type Ident = String
