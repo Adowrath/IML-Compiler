@@ -1,6 +1,9 @@
 import Data.List.Utils
+import Data.List
 
-import qualified IML.Parser.SyntaxTree as Syntax
+import qualified IML.CodeGen.ProgramContext as C
+
+import qualified IML.Parser.SyntaxTree as S
 
 {-
 1. Alle Globlane Variablen sammeln
@@ -9,31 +12,20 @@ import qualified IML.Parser.SyntaxTree as Syntax
 3.1 Alle Funktions-Idents können als Variable mit dem Return Typ behandelt werden
 
 Was Ist [Ident] in den CallCommands ???
+Todo: Think about ProgramParams defaults and Restrictions
 
 -}
 
-data Context = Context { -- sammelt alle Variablen
-    progParams :: [ProgParam],  -- programm parameters
-    functions :: [FunctionDeclaration], -- Typenrelavant wegen return Value
-    procedures :: [ProcedureDeclaration] -- Möglich für Scope Check
-    params :: [Param],          -- function or procedure parameters
-    globals :: [GlobalImport],  -- global variables which should be reachable inside a function or a procedure
-    locals :: [StoreDeclaration] }
-
+-- 3 Main-Groups
 getFunctions :: [Declaration] -> [FunctionDeclaration]
-getFunctions ds = map (\(dt fd) -> fd) (filter (\(dt d) -> dt == FDecl) ds)
+getFunctions ds = map (\(FDecl fd) -> fd) (filter (\(dt _) -> dt == FDecl) ds)
 
 getProcedures :: [Declaration] -> [ProcedureDeclaration]
-getProcedures ds = map (\(dt pd) -> pd) (filter (\(dt _) -> dt == PDecl) ds)
+getProcedures ds = map (\(PDecl pd) -> pd) (filter (\(dt _) -> dt == PDecl) ds)
 
 getStoreDeclarations :: [Declaration] -> [StoreDeclaration]
-getStoreDeclarations ds = map (\(dt pd) -> pd) (filter (\(dt _) -> dt == SDecl) ds)
+getStoreDeclarations ds = map (\(SDecl pd) -> pd) (filter (\(dt _) -> dt == SDecl) ds)
 
-checkFunProPD :: Context -> Bool -- Check if Func-&Proc-Idents are parewise disjunct
-checkFunProPD = unimplemented -- Todo
-
-checkVarIdentPD :: Context -> Bool -- Check if Varaible-Idents are parewise disjunct
-checkVarIdentPD = unimplemented -- Todo
 
 typeChecks :: Program -> Program
 typeChecks (Program ident programParams declarations commands) = do
@@ -44,9 +36,9 @@ typeChecks (Program ident programParams declarations commands) = do
         params      = [],
         globals     = getStoreDeclarations declarations,
         locals      = [] }
-    -- Todo Check Context for Paarwise Disjunkt
+    C.checkContextIdentifiers globalContext -- could handle return True
     let newDeclarations = checkDeclarations globalContext declarations
-    let newCommands     = checkCommands globalContext commands -- Todo
+    let newCommands     = checkCommands globalContext commands
     return (Program ident programParams newDeclarations newCommands)
 
 checkDeclarations :: Context -> [Declaration] -> [Declaration]
@@ -60,29 +52,31 @@ checkDeclarations context declarationList = checkDeclarations' [] context declar
 
 checkFDecl :: Context -> FunctionDeclaration -> FunctionDeclaration
 checkFDecl c (FunctionDeclaration ident params storeDeclaration globalImports storeDeclarations commands) = do
-    let localContext = Context { -- Todo Check All bevore Adding
+    let newParams = map fillParamModes params -- adds all missing modes to the params
+    let localContext = Context {
         progParams  = [],           -- Are not global visable
         functions   = functions c,  -- Stays the same during entire program
         procedures  = procedures c, -- Stays the same during entire program
-        params      = storeDeclaration : params, -- Returnvalue gets added to the Function Params
-        globals     = globalImports,
+        params      = storeDeclaration : newParams, -- Returnvalue gets added to the Function Params
+        globals     = globalImports ++ (globals c),
         locals      = storeDeclarations }
-    -- Todo Check Context for Paarwise Disjunkt
+    C.checkContextIdentifiers localContext -- could handle return True
     let newCommands = checkCommands localContext commands
-    return (FunctionDeclaration ident params storeDeclaration globalImports storeDeclarations newCommands)
+    return (FunctionDeclaration ident newParams storeDeclaration globalImports storeDeclarations newCommands)
 
 checkPDecl :: Context -> ProcedureDeclaration -> ProcedureDeclaration
 checkPDecl c (ProcedureDeclaration ident params globalImports storeDeclarations commands) = do
-    let localContext = Context { -- Todo Check All bevore Adding
+    let newParams = map fillParamModes params -- adds all missing modes to the params
+    let localContext = Context {
         progParams  = [],           -- Are not global visable
         functions   = functions c,  -- Stays the same during entire program
         procedures  = procedures c, -- Stays the same during entire program
-        params      = params,
-        globals     = globalImports,
+        params      = newParams,
+        globals     = globalImports ++ (globals c),
         locals      = storeDeclarations }
-    -- Todo Check Context for Paarwise Disjunkt
+    C.checkContextIdentifiers localContext -- could handle return True
     let newCommands = checkCommands localContext commands
-    return (ProcedureDeclaration ident params globalImports storeDeclarations newCommands)
+    return (ProcedureDeclaration ident newParams globalImports storeDeclarations newCommands)
 
 -- Todo checkCommands :: Context -> [Command] -> [Command] -- no Following where Function-Calls or Procedure-Calls
 checkCommands :: Context -> [Command] -> [Command] -- no Following where Function-Calls or Procedure-Calls
@@ -90,25 +84,148 @@ checkCommands context commandList = checkCommands' [] context commandList
     where checkCommands' acc _ [] = acc -- basecase
           checkCommands' acc c (co:cos) = checkCommands' (acc ++ newCmd) co cos
             where newCmd = case co of (SkipCommand)                         -> (SkipCommand)
-                                      (AssignCommand exprl1 exprl2)         -> -- Follow
-                                      (IfCommand expr commandl1 commandl2)  -> -- Follow
-                                      (WhileCommand expr commandl)          -> -- Follow
-                                      (CallCommand ident exprl1 exprl2)     ->
-                                      (DebugInCommand expr)                 -> -- Follow
-                                      (DebugOutCommand expr)                -> -- Follow
+                                      (AssignCommand exprl1 exprl2)         -> assCmd
+                                        where assCmd = do
+                                            let newExprl1 = checkExpr exprl1
+                                            let newExprl2 = checkExpr exprl2
+                                            let equal = and (zipWith (\e1 -> \e2 -> if getExprAtomicType e1 == getExprAtomicType e1 then True else error "Assingment of two differnt types") newExprl1 newExprl2)
+                                            return (AssignCommand newExprl1 newExprl2)
+                                      (IfCommand expr commandl1 commandl2)  -> ifCmd
+                                        where ifCmd = do
+                                            let newExpr = checkExprSingle expr -- set Type
+                                            let equal = getExprAtomicType newExpr == BoolType -- check Type
+                                            let newCommandl1 = checkCommands commandl1
+                                            let newCommandl2 = checkCommands commandl2
+                                            if equal then return (IfCommand expr newCommandl1 newCommandl2) else error "'If' supports only evaluation to boolean"
+                                      (WhileCommand expr commandl)          -> whilCmd
+                                        where whilCmd = do
+                                            let newExpr = checkExprSingle expr -- set Type
+                                            let equal = getExprAtomicType newExpr == BoolType -- check Type
+                                            let newCommandl = checkCommands commandl
+                                            if equal then return (WhileCommand newExpr newCommandl) else error "'While' supports only evaluation to boolean"
+                                      (CallCommand ident exprl1 exprl2)     -> callCmd -- NO Following !! it gets checked during the "checkPDecl"
+                                        where callCmd = do
+                                            let newExprl1 = checkExpr exprl1
+                                            let newExprl2 = checkExpr exprl2
+                                            if (C.searchIdentProcedures c ident) /= Nothing then return (CallCommand ident exprl1 exprl2) else error ("Procedure identifier not found: " ++ ident)
+                                      (DebugInCommand expr)                 -> dbgInCmd
+                                        where dbgInCmd = do
+                                            let newExpr = checkExprSingle expr -- set Type
+                                            return (DebugInCommand newExpr) -- TODO Does this expressen need to have a specific type ?
+                                      (DebugOutCommand expr)                -> dbgOutCmd
+                                        where dbgOutCmd = do
+                                            let newExpr = checkExprSingle expr -- set Type
+                                            return (DebugOutCommand newExpr)
 
--- Todo checkExpr :: Context -> [Expr] -> [Expr] -- no Following where Function-Calls or Procedure-Calls
--- Todo Relplace Placholder in AtomicType with real AtomicType
+
 checkExpr :: Context -> [Expr] -> [Expr] -- no Following where Function-Calls or Procedure-Calls
 checkExpr context exprList = checkExpr' [] context exprList
     where checkExpr' acc _ [] = acc -- basecase
           checkExpr' acc c (e:es) = checkExpr' (acc ++ newExpr) e es
-            where newExpr = case e of (LiteralExpr atomicType literal)             -> -- Follow
-                                      (FunctionCallExpr atomicType ident exprl)    ->
-                                      (NameExpr atomicType ident bool)             -> -- Follow
-                                      (UnaryExpr atomicType unaryOpr expr)         -> -- Follow
-                                      (BinaryExpr atomicType binaryOpr expr expr)  -> -- Follow
-                                      (ConditionalExpr atomicType expr expr expr)  -> -- Follow
+            where newExpr = checkExprSingle c e
+
+checkExprSingle :: Context -> Expr -> Expr
+checkExprSingle c e = case e of (LiteralExpr atomicType literal)                  -> (LiteralExpr (getAtomicTypeOfLiteral literal) literal) -- No Checks needed, just setting AtomicType
+
+                                (FunctionCallExpr atomicType ident exprl)         -> (FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident exprl) -- NO FOLLOWING !! gets already checked by "checkFDecl"
+
+                                (NameExpr atomicType ident bool)                  -> (NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool)
+
+                                (UnaryExpr atomicType unaryOpr expr)              -> unExp
+                                    where unExp = do
+                                        let newExpr = checkExprSingle expr
+                                        return newUnaryExpr
+                                            where newUnaryExpr | isBoolTypeOpr unaryOpr = if (getExprAtomicType expr) == BoolType then (UnaryExpr BoolType unaryOpr expr) else error "'Not' does not match with any other type than boolean"
+                                                               | isIntTypeOper unaryOpr = if (getExprAtomicType expr) /= BoolType then (UnaryExpr Int64Type unaryOpr expr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
+                                                               | otherwise              = error ("No recognisable unary operator: " ++ unaryOpr)
+
+                                (BinaryExpr atomicType binaryOpr expr1 expr2)     -> binExp
+                                  where binExp = do
+                                      let nex1 = checkExprSingle expr1
+                                      let nex2 = checkExprSingle expr2
+                                      let ty = getExprAtomicType nex1
+                                      let equal = ty == (getExprAtomicType nex2)
+                                      if not equal then error "Bianry operations need the same type on boath sides"
+                                                   else $ if (isBoolTypeOpr binaryOpr && ty == BoolType) || (isIntTypeOper binaryOpr && ty == Int64Type) then return (BinaryExpr ty binaryOpr nex1 nex2)
+                                                                                                                                                         else error "Operator does not support given type"
+                                (ConditionalExpr atomicType expr1 expr2 expr3)    -> conExp
+                                  where conExp = do
+                                      let nex1 = checkExprSingle expr1
+                                      let isBoolType = (getExprAtomicType nex1) == BoolType
+                                      let nex2 = checkExprSingle expr2
+                                      let nex3 = checkExprSingle expr3
+                                      let ty = getExprAtomicType nex2
+                                      let equal = ty == (getExprAtomicType nex3)
+                                      if equal && isBoolType then return (ConditionalExpr ty nex1 nex2 nex3)
+                                                             else error "Conditional do not support different types"
+
+isBoolTypeOpr :: (Eq a) => a -> Bool
+isBoolTypeOpr o | o == COrOpr   = True
+                | o == CAndOpr  = True
+                | o == NeqOpr   = True
+                | o == EqOpr    = True
+                | o == Not      = True
+                | otherwise     = False
+
+isIntTypeOper :: (Eq a) => a -> Bool
+isIntTypeOper o | o == EqOpr            = True
+                | o == NeqOpr           = True
+                | not (isBoolTypeOpr o) = True
+                | otherwise             = False -- most possibly not triggered
+
+-- AtomicType setting
+setExprAtomicType :: Expr -> Expr
+setExprAtomicType e = case e of (LiteralExpr atomicType literal)                -> (LiteralExpr (getAtomicTypeOfLiteral literal) literal)
+                                (FunctionCallExpr atomicType ident exprl)       -> (FunctionCallExpr (C.getAtomicTypeFromFuncIdent ident) ident exprl)
+                                (NameExpr atomicType ident bool)                -> (NameExpr (C.getAtomicTypeFromVarIdent ident) ident bool)
+                                (UnaryExpr atomicType unaryOpr expr)            -> (UnaryExpr (getExprAtomicType (setExprAtomicType expr)) unaryOpr expr)
+                                (BinaryExpr atomicType binaryOpr expr1 expr2)   -> (BinaryExpr (getExprAtomicType (setExprAtomicType expr1)) binaryOpr expr1 expr2)
+                                (ConditionalExpr atomicType expr1 expr2 expr3)  -> (ConditionalExpr (getExprAtomicType (setExprAtomicType expr2)) expr1 expr2 expr3)
+
+getExprAtomicType :: Expr -> AtomicType -- TODO needs to grab the type if Untyped
+getExprAtomicType (LiteralExpr atomicType _)            = if atomicType == Untyped then error "No AtomicType set" else atomicType
+getExprAtomicType (FunctionCallExpr atomicType _ _)     = if atomicType == Untyped then error "No AtomicType set" else atomicType
+getExprAtomicType (NameExpr atomicType _ _)             = if atomicType == Untyped then error "No AtomicType set" else atomicType
+getExprAtomicType (UnaryExpr atomicType _ _)            = if atomicType == Untyped then error "No AtomicType set" else atomicType
+getExprAtomicType (BinaryExpr atomicType _ _ _)         = if atomicType == Untyped then error "No AtomicType set" else atomicType
+getExprAtomicType (ConditionalExpr atomicType _ _ _)    = if atomicType == Untyped then error "No AtomicType set" else atomicType
+
+
+getTypeVariableByIdent :: Context -> Ident -> AtomicType
+getTypeVariableByIdent c i = do
+    let l   = searchLocals c i
+    let g   = searchGlobals c i
+    let p   = searchParams c i
+    let pp  = searchProgParams c i
+    return (l || g || p || pp)
+
+
+
+-- HELPERS
+getAtomicTypeOfLiteral :: Literal -> AtomicType
+getAtomicTypeOfLiteral (a _) = case a of BoolLiteral    -> BoolType
+                                         Int64Literal   -> Int64Type
+
+compair2Types :: AtomicType -> AtomicType -> Bool
+compair2Types a b = a == b
+
+
+getIdent :: e -> Ident
+getIdent (Program ident _ _ _)                  = ident
+getIdent (SDecl storeDeclaration)               = getIdent storeDeclaration
+getIdent (FDecl functionDeclaration)            = getIdent functionDeclaration
+getIdent (PDecl procedureDeclaration)           = getIdent procedureDeclaration
+getIdent (StoreDeclaration _ typedIdentifier)   = getIdent typedIdentifier
+getIdent (FunctionDeclaration ident _ _ _ _ _)  = ident
+getIdent (ProcedureDeclaration ident _ _ _ _)   = ident
+getIdent (GlobalImport _ _ ident)               = ident
+getIdent (ProgParam _ _ typedIdentifier)        = getIdent typedIdentifier
+getIdent (Param _ _ _ typedIdentifier)          = getIdent typedIdentifier
+getIdent (TypedIdentifier ident _)              = ident
+getIdent _                                      = error "given Element has no Identifier"
+
+
+
 
 
 
