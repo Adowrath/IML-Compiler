@@ -7,6 +7,7 @@ import IML.Token.Tokenizer
 import IML.Token.Tokens
 import IML.Parser.Parser
 import IML.Parser.GeneralParser
+import IML.CodeGen.TypeCheck
 
 import qualified IML.Parser.SyntaxTree    as Syntax
 
@@ -20,9 +21,9 @@ dispatch :: [(String, [String] -> IO ())]
 dispatch = 
   [ 
     ("-t", ignoreResult tokenizeFile),
-    ("-p", ignoreResult parseFile)
+    ("-p", ignoreResult parseFile),
+    ("-c", ignoreResult checkParsed)
   ]
-  
 
 tokenizeFile :: [String] -> IO [Token]
 tokenizeFile p = do
@@ -48,6 +49,16 @@ parser toks =
     [_]          -> error "internal error"
     []           -> error "syntax error"
 
+checkParsed :: [String] -> IO Syntax.Program
+checkParsed p = do
+    tokens <- tokenizeFile p
+    putStrLn "We paresed it as the following:"
+    let syntax_tree = parser tokens
+    print syntax_tree
+    putStrLn "We checked it as the following:"
+    let syntax_tree = typeChecks syntax_tree
+    print syntax_tree
+    return syntax_tree
 
 main :: IO ()
 main = do
