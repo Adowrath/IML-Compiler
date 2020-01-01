@@ -1,6 +1,12 @@
+module IML.CodeGen.TypeCheck (
+    module IML.CodeGen.TypeCheck,
+    typeChecks
+) where
+
 import Data.List.Utils
 import Data.List
 
+import IML.CodeGen.CompileUtils
 import qualified IML.CodeGen.ProgramContext as C
 
 import qualified IML.Parser.SyntaxTree as S
@@ -17,24 +23,25 @@ Todo: Think about ProgramParams defaults and Restrictions
 -}
 
 -- 3 Main-Groups
-getFunctions :: [Declaration] -> [FunctionDeclaration]
-getFunctions ds = map (\(FDecl fd) -> fd) (filter (\(dt _) -> dt == FDecl) ds)
+getFunctions :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [FunctionDeclaration]
+getFunctions (fs, _, _) = fs
 
-getProcedures :: [Declaration] -> [ProcedureDeclaration]
-getProcedures ds = map (\(PDecl pd) -> pd) (filter (\(dt _) -> dt == PDecl) ds)
+getProcedures :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [FunctionDeclaration]
+getProcedures (_, ps, _) = ps
 
-getStoreDeclarations :: [Declaration] -> [StoreDeclaration]
-getStoreDeclarations ds = map (\(SDecl pd) -> pd) (filter (\(dt _) -> dt == SDecl) ds)
+getStoreDeclarations :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [FunctionDeclaration]
+getStoreDeclarations (_, _, ss) = ss
 
 
 typeChecks :: Program -> Program
 typeChecks (Program ident programParams declarations commands) = do
+    let splitedDecs = splitGlobalDeclarations declarations
     let globalContext = Context {
         progParams  = programParams,
-        functions   = getFunctions declarations,
-        procedures  = getProcedures declarations,
+        functions   = getFunctions splitedDecs,
+        procedures  = getProcedures splitedDecs,
         params      = [],
-        globals     = getStoreDeclarations declarations,
+        globals     = getStoreDeclarations splitedDecs,
         locals      = [] }
     C.checkContextIdentifiers globalContext -- could handle return True
     let newDeclarations = checkDeclarations globalContext declarations
@@ -44,9 +51,9 @@ typeChecks (Program ident programParams declarations commands) = do
 checkDeclarations :: Context -> [Declaration] -> [Declaration]
 checkDeclarations context declarationList = checkDeclarations' [] context declarationList
     where checkDeclarations' acc _ [] = acc -- basecase
-          checkDeclarations' acc c ((dt sd)  :ds) = checkDeclarations' (acc ++ decel:[]) c ds
-            where decel = case dt of FDecl -> (FDecl (checkFDecl c d))
-                                     PDecl -> (PDecl (checkPDecl c d))
+          checkDeclarations' acc c (d:ds) = checkDeclarations' (acc ++ decel:[]) c ds
+            where decel = case d of (FDecl fd) -> (FDecl (checkFDecl c fd))
+                                    (PDecl pd) -> (PDecl (checkPDecl c pd))
                                      -- SDecl -> (SDecl (checkSDecl c d)) -- is not needed due to sdecl does not need any checks
 
 
@@ -86,36 +93,36 @@ checkCommands context commandList = checkCommands' [] context commandList
             where newCmd = case co of (SkipCommand)                         -> (SkipCommand)
                                       (AssignCommand exprl1 exprl2)         -> assCmd
                                         where assCmd = do
-                                            let newExprl1 = checkExpr exprl1
-                                            let newExprl2 = checkExpr exprl2
-                                            let equal = and (zipWith (\e1 -> \e2 -> if getExprAtomicType e1 == getExprAtomicType e1 then True else error "Assingment of two differnt types") newExprl1 newExprl2)
-                                            return (AssignCommand newExprl1 newExprl2)
+                                                         newExprl1 <- checkExpr exprl1
+                                                         newExprl2 <- checkExpr exprl2
+                                                         and (zipWith (\e1 -> \e2 -> if getExprAtomicType e1 == getExprAtomicType e1 then True else error "Assingment of two differnt types") newExprl1 newExprl2)
+                                                         return (AssignCommand newExprl1 newExprl2)
                                       (IfCommand expr commandl1 commandl2)  -> ifCmd
                                         where ifCmd = do
-                                            let newExpr = checkExprSingle expr -- set Type
-                                            let equal = getExprAtomicType newExpr == BoolType -- check Type
-                                            let newCommandl1 = checkCommands commandl1
-                                            let newCommandl2 = checkCommands commandl2
-                                            if equal then return (IfCommand expr newCommandl1 newCommandl2) else error "'If' supports only evaluation to boolean"
+                                                        newExpr <- checkExprSingle expr -- set Type
+                                                        equal <- getExprAtomicType newExpr == BoolType -- check Type
+                                                        newCommandl1 <- checkCommands commandl1
+                                                        newCommandl2 <- checkCommands commandl2
+                                                        if equal then return (IfCommand expr newCommandl1 newCommandl2) else error "'If' supports only evaluation to boolean"
                                       (WhileCommand expr commandl)          -> whilCmd
                                         where whilCmd = do
-                                            let newExpr = checkExprSingle expr -- set Type
-                                            let equal = getExprAtomicType newExpr == BoolType -- check Type
-                                            let newCommandl = checkCommands commandl
-                                            if equal then return (WhileCommand newExpr newCommandl) else error "'While' supports only evaluation to boolean"
+                                                          newExpr <- checkExprSingle expr -- set Type
+                                                          equal <- getExprAtomicType newExpr == BoolType -- check Type
+                                                          newCommandl <- checkCommands commandl
+                                                          if equal then return (WhileCommand newExpr newCommandl) else error "'While' supports only evaluation to boolean"
                                       (CallCommand ident exprl1 exprl2)     -> callCmd -- NO Following !! it gets checked during the "checkPDecl"
                                         where callCmd = do
-                                            let newExprl1 = checkExpr exprl1
-                                            let newExprl2 = checkExpr exprl2
-                                            if (C.searchIdentProcedures c ident) /= Nothing then return (CallCommand ident exprl1 exprl2) else error ("Procedure identifier not found: " ++ ident)
+                                                          newExprl1 <- checkExpr exprl1
+                                                          newExprl2 <- checkExpr exprl2
+                                                          if (C.searchIdentProcedures c ident) /= Nothing then return (CallCommand ident exprl1 exprl2) else error ("Procedure identifier not found: " ++ ident)
                                       (DebugInCommand expr)                 -> dbgInCmd
                                         where dbgInCmd = do
-                                            let newExpr = checkExprSingle expr -- set Type
-                                            return (DebugInCommand newExpr) -- TODO Does this expressen need to have a specific type ?
+                                                           newExpr <- checkExprSingle expr -- set Type
+                                                           return (DebugInCommand newExpr) -- TODO Does this expressen need to have a specific type ?
                                       (DebugOutCommand expr)                -> dbgOutCmd
                                         where dbgOutCmd = do
-                                            let newExpr = checkExprSingle expr -- set Type
-                                            return (DebugOutCommand newExpr)
+                                                            newExpr <- checkExprSingle expr -- set Type
+                                                            return (DebugOutCommand newExpr)
 
 
 checkExpr :: Context -> [Expr] -> [Expr] -- no Following where Function-Calls or Procedure-Calls
@@ -133,31 +140,31 @@ checkExprSingle c e = case e of (LiteralExpr atomicType literal)                
 
                                 (UnaryExpr atomicType unaryOpr expr)              -> unExp
                                     where unExp = do
-                                        let newExpr = checkExprSingle expr
-                                        return newUnaryExpr
-                                            where newUnaryExpr | isBoolTypeOpr unaryOpr = if (getExprAtomicType expr) == BoolType then (UnaryExpr BoolType unaryOpr expr) else error "'Not' does not match with any other type than boolean"
-                                                               | isIntTypeOper unaryOpr = if (getExprAtomicType expr) /= BoolType then (UnaryExpr Int64Type unaryOpr expr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
-                                                               | otherwise              = error ("No recognisable unary operator: " ++ unaryOpr)
+                                                    newExpr <- checkExprSingle expr
+                                                    return newUnaryExpr
+                                                        where newUnaryExpr | isBoolTypeOpr unaryOpr = if (getExprAtomicType expr) == BoolType then (UnaryExpr BoolType unaryOpr expr) else error "'Not' does not match with any other type than boolean"
+                                                                           | isIntTypeOper unaryOpr = if (getExprAtomicType expr) /= BoolType then (UnaryExpr Int64Type unaryOpr expr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
+                                                                           | otherwise              = error ("No recognisable unary operator: " ++ unaryOpr)
 
                                 (BinaryExpr atomicType binaryOpr expr1 expr2)     -> binExp
                                   where binExp = do
-                                      let nex1 = checkExprSingle expr1
-                                      let nex2 = checkExprSingle expr2
-                                      let ty = getExprAtomicType nex1
-                                      let equal = ty == (getExprAtomicType nex2)
-                                      if not equal then error "Bianry operations need the same type on boath sides"
-                                                   else $ if (isBoolTypeOpr binaryOpr && ty == BoolType) || (isIntTypeOper binaryOpr && ty == Int64Type) then return (BinaryExpr ty binaryOpr nex1 nex2)
-                                                                                                                                                         else error "Operator does not support given type"
+                                                   nex1 <- checkExprSingle expr1
+                                                   nex2 <- checkExprSingle expr2
+                                                   ty <- getExprAtomicType nex1
+                                                   equal <- ty == (getExprAtomicType nex2)
+                                                   if not equal then error "Bianry operations need the same type on boath sides"
+                                                                else if (isBoolTypeOpr binaryOpr && ty == BoolType) || (isIntTypeOper binaryOpr && ty == Int64Type) then return (BinaryExpr ty binaryOpr nex1 nex2)
+                                                                                                                                                                    else error "Operator does not support given type"
                                 (ConditionalExpr atomicType expr1 expr2 expr3)    -> conExp
                                   where conExp = do
-                                      let nex1 = checkExprSingle expr1
-                                      let isBoolType = (getExprAtomicType nex1) == BoolType
-                                      let nex2 = checkExprSingle expr2
-                                      let nex3 = checkExprSingle expr3
-                                      let ty = getExprAtomicType nex2
-                                      let equal = ty == (getExprAtomicType nex3)
-                                      if equal && isBoolType then return (ConditionalExpr ty nex1 nex2 nex3)
-                                                             else error "Conditional do not support different types"
+                                                   nex1 <- checkExprSingle expr1
+                                                   isBoolType <- (getExprAtomicType nex1) == BoolType
+                                                   nex2 <- checkExprSingle expr2
+                                                   nex3 <- checkExprSingle expr3
+                                                   ty <- getExprAtomicType nex2
+                                                   equal <- ty == (getExprAtomicType nex3)
+                                                   if equal && isBoolType then return (ConditionalExpr ty nex1 nex2 nex3)
+                                                                          else error "Conditional do not support different types"
 
 isBoolTypeOpr :: (Eq a) => a -> Bool
 isBoolTypeOpr o | o == COrOpr   = True
@@ -203,8 +210,8 @@ getTypeVariableByIdent c i = do
 
 -- HELPERS
 getAtomicTypeOfLiteral :: Literal -> AtomicType
-getAtomicTypeOfLiteral (a _) = case a of BoolLiteral    -> BoolType
-                                         Int64Literal   -> Int64Type
+getAtomicTypeOfLiteral l = case l of (BoolLiteral Bool)     -> BoolType
+                                     (Int64Literal Integer) -> Int64Type
 
 compair2Types :: AtomicType -> AtomicType -> Bool
 compair2Types a b = a == b
@@ -230,7 +237,7 @@ getIdent _                                      = error "given Element has no Id
 
 
 -- -######- Code below needs to be redone -######-
-
+{-
 -- Iteriert durch alle Commands und gibt am ende True wenn alle Typen stimmen
 typeCheckCommands :: Context -> [Command] -> [Command] -- Tailrecursion
 typeCheckCommands c l = typeCheckMain' True c l
@@ -364,7 +371,7 @@ getTypeFromParam (Param _ _ _ (TypedIdentifier _ ty)) = ty
 
 getIdentFromParam :: Param -> Ident
 getIdentFromParam (Param _ _ _ (TypedIdentifier i _)) = i
-
+-}
 -- |
 -- Fills in missing Modes into the given parameter
 -- Defaults are "in", "copy", "const", with the following restrictions:
