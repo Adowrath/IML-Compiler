@@ -1,6 +1,5 @@
-
-import 
-
+module IML.CodeGen.CodeGen where
+{-
 data FunctionMetadata = FunctionMetadata {
   inGlobals :: [TypedIdent],
   inParams :: [TypedIdent],
@@ -22,13 +21,12 @@ genVMProgram = do
 
 genFunc :: FunctionDeclaration -> VMProgram
 genFunv FunctionDeclaration = do
-    genMeta = do
-        returnParam
-        outcopyParam
-        inoutcopyParam
-        incopyParam
-        globalParam
-        refParam -- generates No local Varaible
+                                returnParam
+                                outcopyParam
+                                inoutcopyParam
+                                incopyParam
+                                globalParam
+                                refParam -- generates No local Varaible
     
 
 genProc :: ProcedureDeclaration -> VMProgram
@@ -47,7 +45,7 @@ genProcMeta (ProcedureDeclaration _ Params Globals _ _) =
     ProcedureMetadata {
         inGlobals = fst inOhterGloblas,
         otherGlobals = snd inOhterGloblas,
-        inParams = fst inOtherParams
+        inParams = fst inOtherParams,
         otherParams = snd inOtherParams
     } -- Separation between InFlow and In- or InOutFlow --> ([InFlows], [In-/InOutFlows])
     where inOtherParams  = partition (\(Param FlowMode _ _ _)      -> FlowMode == (Just InFlow)) Params
@@ -61,8 +59,8 @@ genAssign :: Command -> VMProgram
 
 genExpr :: Expr -> VMProgram
 genExpr | (LiteralExpr (Literal ty val)) = [(AllocBlock 1), (LoadIm vmty val)] 
-                                           where vmty = case ty of BoolLiteral  -> IntVmTy
-                                                                   Int64Literal -> Int64VmTy
+            where vmty = case ty of (BoolLiteral Bool)      -> IntVmTy
+                                    (Int64Literal Interger) -> Int64VmTy
         | (FunctionCallExpr Ident ExprList) -- ??
         | (NameExpr Ident Bool) = "Lade die Variable auf den Stack"
         | (UnaryExpr UnaryOpr Expr) = (genExpr Expr) ++ [operation]
@@ -90,3 +88,4 @@ genMain :: [] -> VMProgram
 
 
 
+-}
