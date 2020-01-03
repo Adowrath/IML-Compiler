@@ -30,7 +30,7 @@ library
                        IML.CodeGen.TypeCheck, IML.CodeGen.ProgramContext,
 
                        IML.CodeGen.CompileUtils,
-                       IML.CodeGen.CodeGen, IML.CodeGen.DefaultsPhase
+                       IML.CodeGen.CodeGen, IML.CodeGen.DefaultsPhase, IML.CodeGen.TypeCheckPhase
   build-depends:       iml-virtual-machine
 
 library iml-virtual-machine
