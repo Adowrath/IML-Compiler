@@ -27,6 +27,8 @@ library
   exposed-modules:     IML.Token.Tokens, IML.Token.Tokenizer,
                        IML.Parser.Parser, IML.Parser.GeneralParser, IML.Parser.SyntaxTree,
 
+                       IML.CodeGen.TypeCheck, IML.CodeGen.ProgramContext,
+
                        IML.CodeGen.CompileUtils,
                        IML.CodeGen.CodeGen, IML.CodeGen.DefaultsPhase
   build-depends:       iml-virtual-machine
