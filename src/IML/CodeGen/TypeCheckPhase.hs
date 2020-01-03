@@ -2,52 +2,49 @@
 
 module IML.CodeGen.TypeCheckPhase where
 
-import           Control.Applicative   ((<|>))
-import           Data.List             (find)
-import           Data.Maybe            (fromMaybe)
-import qualified IML.Parser.SyntaxTree as S
+import           Control.Applicative      ((<|>))
+import           Data.List                (find)
+import           Data.Maybe               (fromMaybe)
+import           IML.CodeGen.CompileUtils (Context (..), buildContext,
+                                           buildSubcontext, contextFunctions,
+                                           contextLocals, contextParams,
+                                           contextProcedures)
+import qualified IML.Parser.SyntaxTree    as S
 import           Text.Printf
 
 -- | Types the given program completely.
 typeCheckProgram :: S.Program -> S.Program
 typeCheckProgram (S.Program pName pParams stores funcs procs pCmds) =
-  let ?context = TypingContext -- Construct a global context.
-        { _contextParams = progParamToParam <$> pParams
-        , _contextLocals = stores
-        , _contextFunctions = funcs
-        , _contextProcedures = procs
-        }
+  let ?context = buildContext (progParamToParam <$> pParams) stores funcs procs
    in S.Program pName pParams stores (typeCheckFunction <$> funcs) (typeCheckProcedure <$> procs) (typeCheckBlock pCmds)
 
 -- | Types the given function according to the supplied global context.
-typeCheckFunction :: (?context :: TypingContext) => S.FunctionDeclaration -> S.FunctionDeclaration
+typeCheckFunction :: (?context :: Context) => S.FunctionDeclaration -> S.FunctionDeclaration
 typeCheckFunction (S.FunctionDeclaration name params retDecl globImps locals body) =
   S.FunctionDeclaration name params retDecl globImps locals newBody
   where
     newBody =
-      let ?context = ?context -- Copy of the context, but new params and locals
-            {_contextParams = params ++ (globalImportToParam <$> globImps), _contextLocals = retDecl : locals}
+      let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) (retDecl : locals)
        in typeCheckBlock body
 
 -- | Types the given procedure according to the supplied global context.
-typeCheckProcedure :: (?context :: TypingContext) => S.ProcedureDeclaration -> S.ProcedureDeclaration
+typeCheckProcedure :: (?context :: Context) => S.ProcedureDeclaration -> S.ProcedureDeclaration
 typeCheckProcedure (S.ProcedureDeclaration name params globImps locals body) =
   S.ProcedureDeclaration name params globImps locals newBody
   where
     newBody =
-      let ?context = ?context -- Copy of the context, but new params and locals
-            {_contextParams = params ++ (globalImportToParam <$> globImps), _contextLocals = locals}
+      let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) locals
        in typeCheckBlock body
 
 --                  --
 -- Command typings. --
 --                  --
 -- | Types the given block according to the supplied context.
-typeCheckBlock :: (?context :: TypingContext) => [S.Command] -> [S.Command]
+typeCheckBlock :: (?context :: Context) => [S.Command] -> [S.Command]
 typeCheckBlock cmds = typeCheckCommand <$> cmds
 
 -- | Types a given command in the supplied context.
-typeCheckCommand :: (?context :: TypingContext) => S.Command -> S.Command
+typeCheckCommand :: (?context :: Context) => S.Command -> S.Command
 typeCheckCommand cmd =
   case cmd of
     S.SkipCommand -> S.SkipCommand
@@ -59,7 +56,7 @@ typeCheckCommand cmd =
     S.DebugOutCommand expr -> S.DebugOutCommand $ typeCheckExpr expr
 
 -- | Type checks an assignment command.
-typeCheckAssignment :: (?context :: TypingContext) => [S.Expr] -> [S.Expr] -> S.Command
+typeCheckAssignment :: (?context :: Context) => [S.Expr] -> [S.Expr] -> S.Command
 typeCheckAssignment [] [] = error "Assignment with empty sides."
 typeCheckAssignment leftExprs rightExprs = S.AssignCommand leftTyped rightTyped
   where
@@ -77,7 +74,7 @@ typeCheckAssignment leftExprs rightExprs = S.AssignCommand leftTyped rightTyped
         (ls', rs') = checkAssignability ls rs
 
 -- | Type checks an if command.
-typeCheckIf :: (?context :: TypingContext) => S.Expr -> [S.Command] -> [S.Command] -> S.Command
+typeCheckIf :: (?context :: Context) => S.Expr -> [S.Command] -> [S.Command] -> S.Command
 typeCheckIf condition thenBlock elseBlock = S.IfCommand typedCondition thenTyped elseTyped
   where
     typedCondition = typeCheckExprConforming condition S.BoolType
@@ -85,14 +82,14 @@ typeCheckIf condition thenBlock elseBlock = S.IfCommand typedCondition thenTyped
     elseTyped = typeCheckBlock elseBlock
 
 -- | Type checks a while command.
-typeCheckWhile :: (?context :: TypingContext) => S.Expr -> [S.Command] -> S.Command
+typeCheckWhile :: (?context :: Context) => S.Expr -> [S.Command] -> S.Command
 typeCheckWhile condition doBlock = S.WhileCommand typedCondition doTyped
   where
     typedCondition = typeCheckExprConforming condition S.BoolType
     doTyped = typeCheckBlock doBlock
 
 -- | Type checks a call command.
-typeCheckCall :: (?context :: TypingContext) => S.Ident -> [S.Expr] -> [S.Ident] -> S.Command
+typeCheckCall :: (?context :: Context) => S.Ident -> [S.Expr] -> [S.Ident] -> S.Command
 typeCheckCall procName paramExprs globInits = S.CallCommand procName typedParams globInits
   where
     typedParams = typeApplication procParams globImports paramExprs globInits
@@ -102,7 +99,7 @@ typeCheckCall procName paramExprs globInits = S.CallCommand procName typedParams
 -- Expression typings. --
 --                     --
 -- | Type checks an expression in the given typing context.
-typeCheckExpr :: (?context :: TypingContext) => S.Expr -> S.Expr
+typeCheckExpr :: (?context :: Context) => S.Expr -> S.Expr
 typeCheckExpr expr =
   case expr of
     S.LiteralExpr tp lit -> typeCheckLiteral tp lit
@@ -113,13 +110,13 @@ typeCheckExpr expr =
     S.ConditionalExpr tp condition trueExpr falseExpr -> typeCheckConditional tp condition trueExpr falseExpr
 
 -- | Type checks a literal expression.
-typeCheckLiteral :: (?context :: TypingContext) => S.AtomicType -> S.Literal -> S.Expr
+typeCheckLiteral :: (?context :: Context) => S.AtomicType -> S.Literal -> S.Expr
 typeCheckLiteral S.Untyped lit@(S.BoolLiteral _) = S.LiteralExpr S.BoolType lit
 typeCheckLiteral S.Untyped lit@(S.Int64Literal _) = S.LiteralExpr S.Int64Type lit
 typeCheckLiteral _ _ = error "Cannot retype a literal."
 
 -- | Type checks a x.
-typeCheckFunctionCall :: (?context :: TypingContext) => S.AtomicType -> S.Ident -> [S.Expr] -> S.Expr
+typeCheckFunctionCall :: (?context :: Context) => S.AtomicType -> S.Ident -> [S.Expr] -> S.Expr
 typeCheckFunctionCall _ funcName paramExprs = S.FunctionCallExpr returnType funcName typedParams
   where
     typedParams = typeApplication funcParams [] paramExprs []
@@ -127,11 +124,11 @@ typeCheckFunctionCall _ funcName paramExprs = S.FunctionCallExpr returnType func
     returnType = typeOfFunction fun
 
 -- | Type checks a variable name in the given context.
-typeCheckName :: (?context :: TypingContext) => S.AtomicType -> S.Ident -> Bool -> S.Expr
+typeCheckName :: (?context :: Context) => S.AtomicType -> S.Ident -> Bool -> S.Expr
 typeCheckName _ name = S.NameExpr (lookupVariableType name) name
 
 -- | Type checks a unary expression.
-typeCheckUnary :: (?context :: TypingContext) => S.AtomicType -> S.UnaryOpr -> S.Expr -> S.Expr
+typeCheckUnary :: (?context :: Context) => S.AtomicType -> S.UnaryOpr -> S.Expr -> S.Expr
 typeCheckUnary _ opr subExpr = S.UnaryExpr newType opr typedExpr
   where
     newType =
@@ -144,7 +141,7 @@ typeCheckUnary _ opr subExpr = S.UnaryExpr newType opr typedExpr
     typedExpr = typeCheckExpr subExpr
 
 -- | Type checks a binary expression.
-typeCheckBinary :: (?context :: TypingContext) => S.AtomicType -> S.BinaryOpr -> S.Expr -> S.Expr -> S.Expr
+typeCheckBinary :: (?context :: Context) => S.AtomicType -> S.BinaryOpr -> S.Expr -> S.Expr -> S.Expr
 typeCheckBinary _ opr leftExpr rightExpr = S.BinaryExpr newType opr typedLeft typedRight
   where
     newType =
@@ -170,7 +167,7 @@ typeCheckBinary _ opr leftExpr rightExpr = S.BinaryExpr newType opr typedLeft ty
     typedRight = typeCheckExpr rightExpr
 
 -- | Type checks a conditional expression.
-typeCheckConditional :: (?context :: TypingContext) => S.AtomicType -> S.Expr -> S.Expr -> S.Expr -> S.Expr
+typeCheckConditional :: (?context :: Context) => S.AtomicType -> S.Expr -> S.Expr -> S.Expr -> S.Expr
 typeCheckConditional _ condition trueExpr falseExpr = S.ConditionalExpr newType typedCondition typedTrue typedFalse
   where
     newType =
@@ -190,35 +187,6 @@ typeCheckConditional _ condition trueExpr falseExpr = S.ConditionalExpr newType 
 --                      --
 -- Type check utilities --
 --                      --
--- | A typing context for the current location in the program.
--- Every procedure and function has a typing context that is
--- partially derived from the global context that applies to
--- the program's do block.
-data TypingContext =
-  TypingContext
-    { _contextParams     :: [S.Param]
-    , _contextLocals     :: [S.StoreDeclaration]
-    , _contextFunctions  :: [S.FunctionDeclaration]
-    , _contextProcedures :: [S.ProcedureDeclaration]
-    }
-  deriving (Eq, Show)
-
--- | Helper accessor with implicit context.
-contextParams :: (?context :: TypingContext) => [S.Param]
-contextParams = _contextParams ?context
-
--- | Helper accessor with implicit context.
-contextLocals :: (?context :: TypingContext) => [S.StoreDeclaration]
-contextLocals = _contextLocals ?context
-
--- | Helper accessor with implicit context.
-contextFunctions :: (?context :: TypingContext) => [S.FunctionDeclaration]
-contextFunctions = _contextFunctions ?context
-
--- | Helper accessor with implicit context.
-contextProcedures :: (?context :: TypingContext) => [S.ProcedureDeclaration]
-contextProcedures = _contextProcedures ?context
-
 -- | Converts the given program parameter into a dummy normal parameter.
 -- This is useful to check the global do block.
 progParamToParam :: S.ProgParam -> S.Param
@@ -226,7 +194,7 @@ progParamToParam (S.ProgParam flowMode changeMode typedIdent) = S.Param flowMode
 
 -- | Constructs a dummy ref parameter from the given global import syntax node.
 -- TODO: Maybe consider adding typing to the global imports.
-globalImportToParam :: (?context :: TypingContext) => S.GlobalImport -> S.Param
+globalImportToParam :: (?context :: Context) => S.GlobalImport -> S.Param
 globalImportToParam (S.GlobalImport flowMode changeMode name) =
   S.Param flowMode (Just S.RefMech) changeMode typedIdentifier
   where
@@ -253,7 +221,7 @@ getType (S.ConditionalExpr exprType _ _ _) = exprType
 
 -- | Type checks the given expression and validates it against
 -- the expected type. If successful, returns the newly typed expression.
-typeCheckExprConforming :: (?context :: TypingContext) => S.Expr -> S.AtomicType -> S.Expr
+typeCheckExprConforming :: (?context :: Context) => S.Expr -> S.AtomicType -> S.Expr
 typeCheckExprConforming expr expectedType =
   if actualType /= expectedType
     then error $ printf "Expected type %s, but was: %s." (show expectedType) (show actualType)
@@ -269,7 +237,7 @@ typeCheckExprConforming expr expectedType =
 --   - The global import declarations of the procedure (ignored/empty for functions).
 --   - The actual argument expressions for the call.
 --   - The global inits for the procedure call (empty for functions).
-typeApplication :: (?context :: TypingContext) => [S.Param] -> [S.GlobalImport] -> [S.Expr] -> [S.Ident] -> [S.Expr]
+typeApplication :: (?context :: Context) => [S.Param] -> [S.GlobalImport] -> [S.Expr] -> [S.Ident] -> [S.Expr]
 typeApplication formalParams globalImports args globInits =
   if globalsCheck globalImports globInits
     then typeArgs formalParams args
@@ -310,7 +278,7 @@ typeOfFunction (S.FunctionDeclaration _ _ (S.StoreDeclaration _ (S.TypedIdentifi
 
 -- | Tries to lookup a function in the given context.
 -- Fails with error if not found.
-lookupFunction :: (?context :: TypingContext) => S.Ident -> S.FunctionDeclaration
+lookupFunction :: (?context :: Context) => S.Ident -> S.FunctionDeclaration
 lookupFunction funcName =
   fromMaybe
     (error $ printf "Function not found: %s." funcName)
@@ -320,7 +288,7 @@ lookupFunction funcName =
 
 -- | Tries to lookup a procedure in the given context.
 -- Fails with error if not found.
-lookupProcedure :: (?context :: TypingContext) => S.Ident -> S.ProcedureDeclaration
+lookupProcedure :: (?context :: Context) => S.Ident -> S.ProcedureDeclaration
 lookupProcedure procName =
   fromMaybe
     (error $ printf "Procedure not found: %s." procName)
@@ -330,7 +298,7 @@ lookupProcedure procName =
 
 -- | Tries to lookup the type of a variable in the given context.
 -- Fails with error if not found.
-lookupVariableType :: (?context :: TypingContext) => S.Ident -> S.AtomicType
+lookupVariableType :: (?context :: Context) => S.Ident -> S.AtomicType
 lookupVariableType varName =
   fromMaybe (error $ printf "Could not find variable named %s." varName) (typeAsParameter <|> typeAsLocal)
   where
