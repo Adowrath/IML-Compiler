@@ -1,8 +1,9 @@
 module IML.CodeGen.ProgramContext
-  ( Context
+  ( Context(..)
   , checkContextIdentifiers
   , getAtomicTypeFromVarIdent
   , getAtomicTypeFromFuncIdent
+  , searchIdentProcedures
   ) where
 
 import           Control.Applicative   ((<|>))
@@ -15,8 +16,8 @@ data Context =
     { progParams :: [ProgParam] -- programm parameters
     , functions  :: [FunctionDeclaration] -- Typenrelavant wegen return Value
     , procedures :: [ProcedureDeclaration] -- Möglich für Scope Check
-    , params     :: [Param] -- function or procedure parameters
-    , globals    :: [GlobalImport] -- global variables which should be reachable inside a function or a procedure
+    , params     -- :: [Param] -- function or procedure parameters
+    , globals    -- :: [GlobalImport] -- global variables which should be reachable inside a function or a procedure
     , locals     :: [StoreDeclaration]
     }
 
@@ -24,11 +25,11 @@ searchIdentLocals :: Context -> Ident -> StoreDeclaration
 searchIdentLocals c i =
   fromMaybe (error $ "Local identifier can not be found: " ++ i) (find (\x -> getIdent x == i) (locals c))
 
-searchIdentGlobals :: Context -> Ident -> GlobalImport
+searchIdentGlobals :: Context -> Ident -> StoreDeclaration -- TODO Typ Spezifizieren nehmen !!!
 searchIdentGlobals c i =
   fromMaybe (error $ "Global identifier can not be found: " ++ i) (find (\x -> getIdent x == i) (globals c))
 
-searchIdentParams :: Context -> Ident -> Param
+searchIdentParams :: Context -> Ident -> StoreDeclaration
 searchIdentParams c i =
   fromMaybe (error $ "Parameter identifier can not be found: " ++ i) (find (\x -> getIdent x == i) (params c))
 
