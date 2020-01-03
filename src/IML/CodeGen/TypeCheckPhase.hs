@@ -6,6 +6,7 @@ import           Control.Applicative   ((<|>))
 import           Data.List             (find)
 import           Data.Maybe            (fromMaybe)
 import qualified IML.Parser.SyntaxTree as S
+import           Text.Printf
 
 -- | Types the given program completely.
 typeCheckProgram :: S.Program -> S.Program
@@ -67,11 +68,10 @@ typeCheckAssignment leftExprs rightExprs = S.AssignCommand leftTyped rightTyped
     checkAssignability [] _ = error "Too many expressions on right hand side of assignment."
     checkAssignability _ [] = error "Not enough expressions on right hand side of assignment."
     checkAssignability (l:ls) (r:rs) =
-      if check
+      if isLExpr l' && (getType l' == getType r')
         then (l' : ls', r' : rs')
-        else error $ "Cannot assign " ++ show l' ++ " to " ++ show r'
+        else error $ printf "Cannot assign %s to %s." (show l') (show r')
       where
-        check = isLExpr l' && (getType l' == getType r')
         l' = typeCheckExpr l
         r' = typeCheckExpr r
         (ls', rs') = checkAssignability ls rs
@@ -93,7 +93,10 @@ typeCheckWhile condition doBlock = S.WhileCommand typedCondition doTyped
 
 -- | Type checks a call command.
 typeCheckCall :: (?context :: TypingContext) => S.Ident -> [S.Expr] -> [S.Ident] -> S.Command
-typeCheckCall procName procParms globInits = error "TODO: Does not check call commands." -- TODO
+typeCheckCall procName paramExprs globInits = S.CallCommand procName typedParams globInits
+  where
+    typedParams = typeApplication procParams globImports paramExprs globInits
+    (S.ProcedureDeclaration _ procParams globImports _ _) = lookupProcedure procName
 
 --                     --
 -- Expression typings. --
@@ -117,7 +120,11 @@ typeCheckLiteral _ _ = error "Cannot retype a literal."
 
 -- | Type checks a x.
 typeCheckFunctionCall :: (?context :: TypingContext) => S.AtomicType -> S.Ident -> [S.Expr] -> S.Expr
-typeCheckFunctionCall _ name params = undefined
+typeCheckFunctionCall _ funcName paramExprs = S.FunctionCallExpr returnType funcName typedParams
+  where
+    typedParams = typeApplication funcParams [] paramExprs []
+    fun@(S.FunctionDeclaration _ funcParams _ _ _ _) = lookupFunction funcName
+    returnType = typeOfFunction fun
 
 -- | Type checks a variable name in the given context.
 typeCheckName :: (?context :: TypingContext) => S.AtomicType -> S.Ident -> Bool -> S.Expr
@@ -133,7 +140,7 @@ typeCheckUnary _ opr subExpr = S.UnaryExpr newType opr typedExpr
         (S.UnaryMinus, S.Int64Type) -> S.Int64Type
         (S.UnaryPlus, S.Int64Type) -> S.Int64Type
         (_, exprType) ->
-          error $ "Expression of type " ++ show exprType ++ " could not be applied to operator: " ++ show opr
+          error $ printf "Expression of type %s could not be applied to operator %s." (show exprType) (show opr)
     typedExpr = typeCheckExpr subExpr
 
 -- | Type checks a binary expression.
@@ -158,8 +165,7 @@ typeCheckBinary _ opr leftExpr rightExpr = S.BinaryExpr newType opr typedLeft ty
         (S.BoolType, S.CAndOpr, S.BoolType) -> S.BoolType
         (S.BoolType, S.COrOpr, S.BoolType) -> S.BoolType
         (leftType, _, rightType) ->
-          error $
-          "Operator " ++ show opr ++ " could not match operands: " ++ show leftType ++ " and " ++ show rightType ++ "."
+          error $ printf "Operator %s could not match operands: %s and %s." (show opr) (show leftType) (show rightType)
     typedLeft = typeCheckExpr leftExpr
     typedRight = typeCheckExpr rightExpr
 
@@ -173,8 +179,10 @@ typeCheckConditional _ condition trueExpr falseExpr = S.ConditionalExpr newType 
           | trueType == falseType -> trueType
           | otherwise ->
             error $
-            "Conditional expression has unequal types in true [" ++
-            show trueType ++ "] and false [" ++ show falseType ++ "] side."
+            printf
+              "Conditional expression has unequal types in true [%s] and false [%s] side."
+              (show trueType)
+              (show falseType)
     typedCondition = typeCheckExprConforming condition S.BoolType
     typedTrue = typeCheckExpr trueExpr
     typedFalse = typeCheckExpr falseExpr
@@ -225,7 +233,7 @@ globalImportToParam (S.GlobalImport flowMode changeMode name) =
     typedIdentifier = S.TypedIdentifier name globalType
     globalType =
       case find (\(S.StoreDeclaration _ (S.TypedIdentifier n _)) -> n == name) contextLocals of
-        Nothing -> error $ "Can't find global " ++ name
+        Nothing -> error $ printf "Can't find global %s." name
         Just (S.StoreDeclaration _ (S.TypedIdentifier _ t)) -> t
 
 -- | Checks whether the supplied expression is a valid LExpr.
@@ -248,18 +256,64 @@ getType (S.ConditionalExpr exprType _ _ _) = exprType
 typeCheckExprConforming :: (?context :: TypingContext) => S.Expr -> S.AtomicType -> S.Expr
 typeCheckExprConforming expr expectedType =
   if actualType /= expectedType
-    then error $ "Expected type " ++ show expectedType ++ ", but was: " ++ show actualType ++ "."
+    then error $ printf "Expected type %s, but was: %s." (show expectedType) (show actualType)
     else typedExpr
   where
     typedExpr = typeCheckExpr expr
     actualType = getType typedExpr
+
+-- | Type checks a function call or procedure application and returns
+-- the type checked actual arguments.
+-- The arguments are:
+--   - The formal parameter declarations of the function/procedure.
+--   - The global import declarations of the procedure (ignored/empty for functions).
+--   - The actual argument expressions for the call.
+--   - The global inits for the procedure call (empty for functions).
+typeApplication :: (?context :: TypingContext) => [S.Param] -> [S.GlobalImport] -> [S.Expr] -> [S.Ident] -> [S.Expr]
+typeApplication formalParams globalImports args globInits =
+  if globalsCheck globalImports globInits
+    then typeArgs formalParams args
+    else error "Error state: Globals check should error or be True."
+  where
+    globalsCheck _ [] = True
+    globalsCheck imports (g:gs) =
+      case find (\(S.GlobalImport _ _ name) -> name == g) imports of
+        Nothing -> error $ printf "Tried to initialize global variable that is not used by procedure: %s." g
+        Just _ -> globalsCheck imports gs
+    typeArgs [] []         = []
+    typeArgs _ []          = error "Not enough arguments in application."
+    typeArgs [] _          = error "Too many arguments in application."
+    typeArgs (p:ps) (a:as) = checkParam p a : typeArgs ps as
+    checkParam param expr =
+      if check
+        then typedExpr
+        else error "Error state: Param check should error or be True."
+      where
+        typedExpr = typeCheckExpr expr
+        -- TODO: ChangeMode/Init checking.
+        S.Param (Just flowMode) (Just mechMode) _ (S.TypedIdentifier paramName paramType) = param
+        check
+          | needsLExpr && not (isLExpr typedExpr) = error $ printf "LExpr required for parameter: %s." paramName
+          | getType typedExpr /= paramType =
+            error $
+            printf
+              "Param %s is of type %s, but expression of type %s provided."
+              (show paramName)
+              (show paramType)
+              (show (getType typedExpr))
+          | otherwise = True
+        needsLExpr = (flowMode, mechMode) /= (S.InFlow, S.CopyMech)
+
+-- | Extracts the return type of a function declaration.
+typeOfFunction :: S.FunctionDeclaration -> S.AtomicType
+typeOfFunction (S.FunctionDeclaration _ _ (S.StoreDeclaration _ (S.TypedIdentifier _ returnType)) _ _ _) = returnType
 
 -- | Tries to lookup a function in the given context.
 -- Fails with error if not found.
 lookupFunction :: (?context :: TypingContext) => S.Ident -> S.FunctionDeclaration
 lookupFunction funcName =
   fromMaybe
-    (error $ "Function not found: " ++ funcName)
+    (error $ printf "Function not found: %s." funcName)
     (find (\(S.FunctionDeclaration n _ _ _ _ _) -> funcName == n) functions)
   where
     functions = contextFunctions
@@ -269,7 +323,7 @@ lookupFunction funcName =
 lookupProcedure :: (?context :: TypingContext) => S.Ident -> S.ProcedureDeclaration
 lookupProcedure procName =
   fromMaybe
-    (error $ "Procedure not found: " ++ procName)
+    (error $ printf "Procedure not found: %s." procName)
     (find (\(S.ProcedureDeclaration n _ _ _ _) -> procName == n) procedures)
   where
     procedures = contextProcedures
@@ -278,7 +332,7 @@ lookupProcedure procName =
 -- Fails with error if not found.
 lookupVariableType :: (?context :: TypingContext) => S.Ident -> S.AtomicType
 lookupVariableType varName =
-  fromMaybe (error $ "Could not find variable named " ++ varName ++ ".") (typeAsParameter <|> typeAsLocal)
+  fromMaybe (error $ printf "Could not find variable named %s." varName) (typeAsParameter <|> typeAsLocal)
   where
     locals = contextLocals
     params = contextParams
