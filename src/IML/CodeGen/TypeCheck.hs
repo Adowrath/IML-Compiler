@@ -59,7 +59,7 @@ getStoreDeclarations (_, _, ss) = ss
 
 
 typeChecks :: S.Program -> S.Program
-typeChecks (S.Program ident programParams declarations commands) = 
+typeChecks (S.Program ident programParams declarations commands) =
   if C.checkContextIdentifiers globalContext
     then S.Program ident programParams newDeclarations newCommands
     else error "Context Error: Programm Global Identifier Fail"
@@ -73,7 +73,7 @@ typeChecks (S.Program ident programParams declarations commands) =
                         C.globals     = [],
                         C.locals      = getStoreDeclarations splitedDecs }
         splitedDecs = splitGlobalDeclarations declarations
-    
+
 
 checkDeclarations :: C.Context -> [S.Declaration] -> [S.Declaration]
 checkDeclarations context declarationList = checkDeclarations' [] context declarationList
@@ -85,7 +85,7 @@ checkDeclarations context declarationList = checkDeclarations' [] context declar
 
 
 checkFDecl :: C.Context -> S.FunctionDeclaration -> S.FunctionDeclaration
-checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports storeDeclarations commands) = 
+checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports storeDeclarations commands) =
   if C.checkContextIdentifiers localContext
     then S.FunctionDeclaration ident newParams storeDeclaration globalImports storeDeclarations newCommands
     else error "Context Error: Programm Functions Identifier Fail"
@@ -95,12 +95,12 @@ checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports 
           C.progParams  = [],           -- Are not global visable
           C.functions   = C.functions c,  -- Stays the same during entire program
           C.procedures  = C.procedures c, -- Stays the same during entire program
-          C.params      = newParams, 
+          C.params      = newParams,
           C.globals     = globalImports ++ (C.globals c),
           C.locals      = storeDeclaration : storeDeclarations } -- Returnvalue gets added to the Local Params
 
 checkPDecl :: C.Context -> S.ProcedureDeclaration -> S.ProcedureDeclaration
-checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclarations commands) = 
+checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclarations commands) =
   if C.checkContextIdentifiers localContext
     then S.ProcedureDeclaration ident newParams globalImports storeDeclarations newCommands
     else error "Context Error: Programm Procedures Identifier Fail"
@@ -113,14 +113,14 @@ checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclaration
           C.params      = newParams,
           C.globals     = globalImports ++ (C.globals c),
           C.locals      = storeDeclarations }
-        
+
 -- Todo checkCommands :: C.Context -> [S.Command] -> [S.Command] -- no Following where Function-Calls or Procedure-Calls
 checkCommands :: C.Context -> [S.Command] -> [S.Command] -- no Following where Function-Calls or Procedure-Calls
 checkCommands context commandList = checkCommands' [] context commandList
     where checkCommands' acc _ [] = acc -- basecase
           checkCommands' acc c (co:cos) = checkCommands' (acc ++ [newCmd]) c cos
             where newCmd = case co of (S.SkipCommand)                         -> S.SkipCommand
-                                      (S.AssignCommand exprl1 exprl2)         -> 
+                                      (S.AssignCommand exprl1 exprl2)         ->
                                         if checked
                                           then S.AssignCommand newExprl1 newExprl2
                                           else error "AssignCommand Type Error"
@@ -128,7 +128,7 @@ checkCommands context commandList = checkCommands' [] context commandList
                                               newExprl1 = checkExpr c exprl1
                                               newExprl2 = checkExpr c exprl2
 
-                                      (S.IfCommand expr commandl1 commandl2)  -> 
+                                      (S.IfCommand expr commandl1 commandl2)  ->
                                         if getExprAtomicType newExpr == S.BoolType -- check Type
                                           then S.IfCommand newExpr newCommandl1 newCommandl2
                                           else error "'If' supports only evaluation to boolean"
@@ -136,22 +136,22 @@ checkCommands context commandList = checkCommands' [] context commandList
                                               newCommandl1 = checkCommands c commandl1
                                               newCommandl2 = checkCommands c commandl2
 
-                                      (S.WhileCommand expr commandl)          -> 
+                                      (S.WhileCommand expr commandl)          ->
                                         if getExprAtomicType newExpr == S.BoolType -- check Type
                                           then S.WhileCommand newExpr newCommandl
                                           else error "'While' supports only evaluation to boolean"
                                         where newExpr = checkExprSingle c expr -- set Type
                                               newCommandl = checkCommands c commandl
-                                                          
-                                      (S.CallCommand ident exprl1 idents)     -> 
+
+                                      (S.CallCommand ident exprl1 idents)     ->
                                         if typeOf (C.searchIdentProcedures c ident) == typeOf S.ProcedureDeclaration -- check Type
-                                          then S.CallCommand ident newExprl1 idents 
+                                          then S.CallCommand ident newExprl1 idents
                                           else error ("Procedure identifier not found: " ++ ident) -- NO Following !! it gets checked during the "checkPDecl"
-                                        where newExprl1 = checkExpr c exprl1 
-                                        
+                                        where newExprl1 = checkExpr c exprl1
+
                                       (S.DebugInCommand expr)                 -> S.DebugInCommand newExpr
                                         where newExpr = checkExprSingle c expr -- set Type
-                                                           
+
                                       (S.DebugOutCommand expr)                -> S.DebugOutCommand newExpr
                                         where newExpr = checkExprSingle c expr -- set Type
 
@@ -166,11 +166,11 @@ checkExprSingle :: C.Context -> S.Expr -> S.Expr
 checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)                  -> S.LiteralExpr (getAtomicTypeOfLiteral literal) literal -- No Checks needed, just setting AtomicType
 
                                 (S.FunctionCallExpr atomicType ident exprl)         -> S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident newExprL -- NO FOLLOWING !! gets already checked by "checkFDecl"
-                                  where newExprL = checkExpr c exprl 
+                                  where newExprL = checkExpr c exprl
 
                                 (S.NameExpr atomicType ident bool)                  -> S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool
 
-                                (S.UnaryExpr atomicType unaryOpr expr)              -> 
+                                (S.UnaryExpr atomicType unaryOpr expr)              ->
                                   if unaryOpr == S.Not
                                     then if (getExprAtomicType expr) == S.BoolType then (S.UnaryExpr S.BoolType unaryOpr newExpr) else error "'Not' does not match with any other type than boolean"
                                     else if unaryOpr == S.UnaryPlus || unaryOpr == S.UnaryMinus
@@ -181,8 +181,8 @@ checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)              
                                 (S.BinaryExpr atomicType binaryOpr expr1 expr2)     -> binaryOprSolver binaryOpr nex1 nex2
                                   where nex1 = checkExprSingle c expr1
                                         nex2 = checkExprSingle c expr2
-                                                   
-                                (S.ConditionalExpr atomicType expr1 expr2 expr3)    -> 
+
+                                (S.ConditionalExpr atomicType expr1 expr2 expr3)    ->
                                   if equal && isBoolType
                                     then S.ConditionalExpr ty nex1 nex2 nex3
                                     else error "Conditional do not support different types"
@@ -195,21 +195,25 @@ checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)              
 
 
 binaryOprSolver :: S.BinaryOpr -> S.Expr -> S.Expr -> S.Expr
-binaryOprSolver op expr1 expr2 = if (getExprAtomicType expr1 == getExprAtomicType expr2) 
-                                  then case op of S.MultOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.MultOpr expr1 expr2 else error "Typer error in MultOpr"
-                                                  S.DivEOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.DivEOpr expr1 expr2 else error "Typer error in DivEOpr"
-                                                  S.ModEOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.ModEOpr expr1 expr2 else error "Typer error in ModEOpr"
-                                                  S.PlusOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.PlusOpr expr1 expr2 else error "Typer error in PlusOpr"
-                                                  S.MinusOpr  -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.MinusOpr expr1 expr2 else error "Typer error in MinusOpr"
-                                                  S.LTOpr     -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.LTOpr expr1 expr2 else error "Typer error in LTOpr"
-                                                  S.GTOpr     -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.GTOpr expr1 expr2 else error "Typer error in GTOpr"
-                                                  S.LTEOpr    -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.LTEOpr expr1 expr2 else error "Typer error in LTEOpr"
-                                                  S.GTEOpr    -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.GTEOpr expr1 expr2 else error "Typer error in GTEOpr"
-                                                  S.EqOpr     -> S.BinaryExpr S.BoolType S.EqOpr expr1 expr2
-                                                  S.NeqOpr    -> S.BinaryExpr S.BoolType S.NeqOpr expr1 expr2
-                                                  S.CAndOpr   -> if (getExprAtomicType expr1 == S.BoolType) then S.BinaryExpr S.BoolType S.CAndOpr expr1 expr2 else error "Typer error in CAndOpr"
-                                                  S.COrOpr    -> if (getExprAtomicType expr1 == S.BoolType) then S.BinaryExpr S.BoolType S.COrOpr expr1 expr2 else error "Typer error in COrOpr"
-                                  else error ("Left and Right Type of: " ++ (show op) ++ " are not Equal")
+binaryOprSolver op expr1 expr2 = S.BinaryExpr newType op expr1 expr2
+  where
+    newType =
+      case (getExprAtomicType expr1, op, getExprAtomicType expr2) of
+        (S.Int64Type, S.MultOpr, S.Int64Type) -> S.Int64Type
+        (S.Int64Type, S.DivEOpr, S.Int64Type) -> S.Int64Type
+        (S.Int64Type, S.ModEOpr, S.Int64Type) -> S.Int64Type
+        (S.Int64Type, S.PlusOpr, S.Int64Type) -> S.Int64Type
+        (S.Int64Type, S.MinusOpr, S.Int64Type) -> S.Int64Type
+        (S.Int64Type, S.LTOpr, S.Int64Type) -> S.BoolType
+        (S.Int64Type, S.GTOpr, S.Int64Type) -> S.BoolType
+        (S.Int64Type, S.LTEOpr, S.Int64Type) -> S.BoolType
+        (S.Int64Type, S.GTEOpr, S.Int64Type) -> S.BoolType
+        (lType, S.EqOpr, rType)
+          | lType == rType -> S.BoolType
+        (lType, S.NeqOpr, rType)
+          | lType == rType -> S.BoolType
+        (S.BoolType, S.CAndOpr, S.BoolType) -> S.BoolType
+        (S.BoolType, S.COrOpr, S.BoolType) -> S.BoolType
 
 {-
 isBoolTypeOpr :: (Eq a) => a -> Bool -- a als Spez Wert
@@ -388,7 +392,7 @@ getReturnTypeOfFunction (S.FunctionDeclaration _ _ (S.StoreDeclaration _ (S.Type
 
 
 checkFunProc :: [] -> bool
-checkFunProc ((dec ty):fs) = case dec of S.SDecl ->  
+checkFunProc ((dec ty):fs) = case dec of S.SDecl ->
                                             S.FDecl ->
                                             S.PDecl -> checkPDecl ty
 
