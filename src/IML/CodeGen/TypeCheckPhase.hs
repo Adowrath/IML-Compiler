@@ -5,10 +5,10 @@ module IML.CodeGen.TypeCheckPhase where
 import           Control.Applicative      ((<|>))
 import           Data.List                (find)
 import           Data.Maybe               (fromMaybe)
-import           IML.CodeGen.CompileUtils (Context (..), buildContext,
+import           IML.CodeGen.CompileUtils (Context, buildContext,
                                            buildSubcontext, contextFunctions,
                                            contextLocals, contextParams,
-                                           contextProcedures)
+                                           contextProcedures, getType)
 import qualified IML.Parser.SyntaxTree    as S
 import           Text.Printf
 
@@ -21,20 +21,14 @@ typeCheckProgram (S.Program pName pParams stores funcs procs pCmds) =
 -- | Types the given function according to the supplied global context.
 typeCheckFunction :: (?context :: Context) => S.FunctionDeclaration -> S.FunctionDeclaration
 typeCheckFunction (S.FunctionDeclaration name params retDecl globImps locals body) =
-  S.FunctionDeclaration name params retDecl globImps locals newBody
-  where
-    newBody =
-      let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) (retDecl : locals)
-       in typeCheckBlock body
+  let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) (retDecl : locals)
+   in S.FunctionDeclaration name params retDecl globImps locals $ typeCheckBlock body
 
 -- | Types the given procedure according to the supplied global context.
 typeCheckProcedure :: (?context :: Context) => S.ProcedureDeclaration -> S.ProcedureDeclaration
 typeCheckProcedure (S.ProcedureDeclaration name params globImps locals body) =
-  S.ProcedureDeclaration name params globImps locals newBody
-  where
-    newBody =
-      let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) locals
-       in typeCheckBlock body
+  let ?context = buildSubcontext (params ++ (globalImportToParam <$> globImps)) locals
+   in S.ProcedureDeclaration name params globImps locals $ typeCheckBlock body
 
 --                  --
 -- Command typings. --
@@ -45,15 +39,18 @@ typeCheckBlock cmds = typeCheckCommand <$> cmds
 
 -- | Types a given command in the supplied context.
 typeCheckCommand :: (?context :: Context) => S.Command -> S.Command
-typeCheckCommand cmd =
-  case cmd of
-    S.SkipCommand -> S.SkipCommand
-    S.AssignCommand leftExprs rightExprs -> typeCheckAssignment leftExprs rightExprs
-    S.IfCommand condition thenBlock elseBlock -> typeCheckIf condition thenBlock elseBlock
-    S.WhileCommand condition doBlock -> typeCheckWhile condition doBlock
-    S.CallCommand procName procParams globInits -> typeCheckCall procName procParams globInits
-    S.DebugInCommand expr -> S.DebugInCommand $ typeCheckExpr expr
-    S.DebugOutCommand expr -> S.DebugOutCommand $ typeCheckExpr expr
+typeCheckCommand S.SkipCommand = S.SkipCommand
+typeCheckCommand (S.AssignCommand leftExprs rightExprs) = typeCheckAssignment leftExprs rightExprs
+typeCheckCommand (S.IfCommand condition thenBlock elseBlock) = typeCheckIf condition thenBlock elseBlock
+typeCheckCommand (S.WhileCommand condition doBlock) = typeCheckWhile condition doBlock
+typeCheckCommand (S.CallCommand procName procParams globInits) = typeCheckCall procName procParams globInits
+typeCheckCommand (S.DebugInCommand expr) =
+  if isLExpr typedExpr
+    then S.DebugInCommand typedExpr
+    else error $ printf "The expression to a debugin command must be an LExpr, but it is not. %s" (show typedExpr)
+  where
+    typedExpr = typeCheckExpr expr
+typeCheckCommand (S.DebugOutCommand expr) = S.DebugOutCommand $ typeCheckExpr expr
 
 -- | Type checks an assignment command.
 typeCheckAssignment :: (?context :: Context) => [S.Expr] -> [S.Expr] -> S.Command
@@ -100,14 +97,12 @@ typeCheckCall procName paramExprs globInits = S.CallCommand procName typedParams
 --                     --
 -- | Type checks an expression in the given typing context.
 typeCheckExpr :: (?context :: Context) => S.Expr -> S.Expr
-typeCheckExpr expr =
-  case expr of
-    S.LiteralExpr tp lit -> typeCheckLiteral tp lit
-    S.FunctionCallExpr tp name params -> typeCheckFunctionCall tp name params
-    S.NameExpr tp name isInit -> typeCheckName tp name isInit
-    S.UnaryExpr tp opr subExpr -> typeCheckUnary tp opr subExpr
-    S.BinaryExpr tp opr leftExpr rightExpr -> typeCheckBinary tp opr leftExpr rightExpr
-    S.ConditionalExpr tp condition trueExpr falseExpr -> typeCheckConditional tp condition trueExpr falseExpr
+typeCheckExpr (S.LiteralExpr tp lit) = typeCheckLiteral tp lit
+typeCheckExpr (S.FunctionCallExpr tp name params) = typeCheckFunctionCall tp name params
+typeCheckExpr (S.NameExpr tp name isInit) = typeCheckName tp name isInit
+typeCheckExpr (S.UnaryExpr tp opr subExpr) = typeCheckUnary tp opr subExpr
+typeCheckExpr (S.BinaryExpr tp opr leftExpr rightExpr) = typeCheckBinary tp opr leftExpr rightExpr
+typeCheckExpr (S.ConditionalExpr tp condition trueExpr falseExpr) = typeCheckConditional tp condition trueExpr falseExpr
 
 -- | Type checks a literal expression.
 typeCheckLiteral :: (?context :: Context) => S.AtomicType -> S.Literal -> S.Expr
@@ -209,15 +204,6 @@ globalImportToParam (S.GlobalImport flowMode changeMode name) =
 isLExpr :: S.Expr -> Bool
 isLExpr S.NameExpr {} = True
 isLExpr _             = False
-
--- | Extracts the type from a given expression.
-getType :: S.Expr -> S.AtomicType
-getType (S.LiteralExpr exprType _)         = exprType
-getType (S.FunctionCallExpr exprType _ _)  = exprType
-getType (S.NameExpr exprType _ _)          = exprType
-getType (S.UnaryExpr exprType _ _)         = exprType
-getType (S.BinaryExpr exprType _ _ _)      = exprType
-getType (S.ConditionalExpr exprType _ _ _) = exprType
 
 -- | Type checks the given expression and validates it against
 -- the expected type. If successful, returns the newly typed expression.

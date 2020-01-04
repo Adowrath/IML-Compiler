@@ -1,7 +1,8 @@
 {-# LANGUAGE ImplicitParams #-}
 
 module IML.CodeGen.CompileUtils
-  ( Context
+  ( getType
+  , Context
   , buildContext
   , buildSubcontext
   , contextParams
@@ -10,8 +11,16 @@ module IML.CodeGen.CompileUtils
   , contextProcedures
   ) where
 
-import           Data.List             (foldl')
 import qualified IML.Parser.SyntaxTree as S
+
+-- | Extracts the type from a given expression.
+getType :: S.Expr -> S.AtomicType
+getType (S.LiteralExpr exprType _)         = exprType
+getType (S.FunctionCallExpr exprType _ _)  = exprType
+getType (S.NameExpr exprType _ _)          = exprType
+getType (S.UnaryExpr exprType _ _)         = exprType
+getType (S.BinaryExpr exprType _ _ _)      = exprType
+getType (S.ConditionalExpr exprType _ _ _) = exprType
 
 -- | A context for the current location in the program.
 -- Every procedure and function has a context that is
