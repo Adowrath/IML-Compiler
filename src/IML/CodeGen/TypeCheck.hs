@@ -12,6 +12,7 @@ import qualified IML.CodeGen.ProgramContext as C
 
 import qualified IML.Parser.SyntaxTree as S
 
+import Data.Typeable
 {-
 1. Alle Globlane Variablen sammeln
 2. Alle Variablen der Main-Methode sammeln
@@ -69,8 +70,8 @@ typeChecks (S.Program ident programParams declarations commands) =
                         C.functions   = getFunctions splitedDecs,
                         C.procedures  = getProcedures splitedDecs,
                         C.params      = [],
-                        C.globals     = getStoreDeclarations splitedDecs,
-                        C.locals      = [] }
+                        C.globals     = [],
+                        C.locals      = getStoreDeclarations splitedDecs }
         splitedDecs = splitGlobalDeclarations declarations
     
 
@@ -94,9 +95,9 @@ checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports 
           C.progParams  = [],           -- Are not global visable
           C.functions   = C.functions c,  -- Stays the same during entire program
           C.procedures  = C.procedures c, -- Stays the same during entire program
-          C.params      = [storeDeclaration] ++ newParams, -- Returnvalue gets added to the Function Params
+          C.params      = newParams, 
           C.globals     = globalImports ++ (C.globals c),
-          C.locals      = storeDeclarations }
+          C.locals      = storeDeclaration : storeDeclarations } -- Returnvalue gets added to the Local Params
 
 checkPDecl :: C.Context -> S.ProcedureDeclaration -> S.ProcedureDeclaration
 checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclarations commands) = 
@@ -142,10 +143,11 @@ checkCommands context commandList = checkCommands' [] context commandList
                                         where newExpr = checkExprSingle c expr -- set Type
                                               newCommandl = checkCommands c commandl
                                                           
-                                      (S.CallCommand ident exprl1 exprl2)     -> 
-                                        if (C.searchIdentProcedures c ident) /= Nothing -- check Type
-                                          then (S.CallCommand ident exprl1 exprl2) 
+                                      (S.CallCommand ident exprl1 idents)     -> 
+                                        if typeOf (C.searchIdentProcedures c ident) == typeOf S.ProcedureDeclaration -- check Type
+                                          then S.CallCommand ident newExprl1 idents 
                                           else error ("Procedure identifier not found: " ++ ident) -- NO Following !! it gets checked during the "checkPDecl"
+                                        where newExprl1 = checkExpr c exprl1 
                                         
                                       (S.DebugInCommand expr)                 -> S.DebugInCommand newExpr
                                         where newExpr = checkExprSingle c expr -- set Type
@@ -163,28 +165,22 @@ checkExpr context exprList = checkExpr' [] context exprList
 checkExprSingle :: C.Context -> S.Expr -> S.Expr
 checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)                  -> S.LiteralExpr (getAtomicTypeOfLiteral literal) literal -- No Checks needed, just setting AtomicType
 
-                                (S.FunctionCallExpr atomicType ident exprl)         -> S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident exprl -- NO FOLLOWING !! gets already checked by "checkFDecl"
+                                (S.FunctionCallExpr atomicType ident exprl)         -> S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident newExprL -- NO FOLLOWING !! gets already checked by "checkFDecl"
+                                  where newExprL = checkExpr c exprl 
 
                                 (S.NameExpr atomicType ident bool)                  -> S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool
 
                                 (S.UnaryExpr atomicType unaryOpr expr)              -> 
-                                  if isBoolTypeOpr unaryOpr
+                                  if unaryOpr == S.Not
                                     then if (getExprAtomicType expr) == S.BoolType then (S.UnaryExpr S.BoolType unaryOpr newExpr) else error "'Not' does not match with any other type than boolean"
-                                    else if isIntTypeOper unaryOpr
+                                    else if unaryOpr == S.UnaryPlus || unaryOpr == S.UnaryMinus
                                           then if (getExprAtomicType expr) /= S.BoolType then (S.UnaryExpr S.Int64Type unaryOpr newExpr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
-                                          else error ("No recognisable unary operator: " ++ unaryOpr)
+                                          else error ("No recognisable unary operator: " ++ (show unaryOpr))
                                   where newExpr = checkExprSingle c expr
 
-                                (S.BinaryExpr atomicType binaryOpr expr1 expr2)     -> 
-                                  if (getExprAtomicType nex1) == (getExprAtomicType nex2)
-                                    then 
-                                      if (isBoolTypeOpr binaryOpr && ty == S.BoolType) || (isIntTypeOper binaryOpr && ty == S.Int64Type) 
-                                        then S.BinaryExpr (getExprAtomicType nex1) binaryOpr nex1 nex2 
-                                        else error "Operator does not support given type"
-                                    else error "Bianry operations need the same type on boath sides"
+                                (S.BinaryExpr atomicType binaryOpr expr1 expr2)     -> binaryOprSolver binaryOpr nex1 nex2
                                   where nex1 = checkExprSingle c expr1
                                         nex2 = checkExprSingle c expr2
-                                        ty = getExprAtomicType nex1
                                                    
                                 (S.ConditionalExpr atomicType expr1 expr2 expr3)    -> 
                                   if equal && isBoolType
@@ -198,30 +194,48 @@ checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)              
                                         equal = ty == (getExprAtomicType nex3)
 
 
+binaryOprSolver :: S.BinaryOpr -> S.Expr -> S.Expr -> S.Expr
+binaryOprSolver op expr1 expr2 = if (getExprAtomicType expr1 == getExprAtomicType expr2) 
+                                  then case op of S.MultOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.MultOpr expr1 expr2 else error "Typer error in MultOpr"
+                                                  S.DivEOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.DivEOpr expr1 expr2 else error "Typer error in DivEOpr"
+                                                  S.ModEOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.ModEOpr expr1 expr2 else error "Typer error in ModEOpr"
+                                                  S.PlusOpr   -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.PlusOpr expr1 expr2 else error "Typer error in PlusOpr"
+                                                  S.MinusOpr  -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.Int64Type S.MinusOpr expr1 expr2 else error "Typer error in MinusOpr"
+                                                  S.LTOpr     -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.LTOpr expr1 expr2 else error "Typer error in LTOpr"
+                                                  S.GTOpr     -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.GTOpr expr1 expr2 else error "Typer error in GTOpr"
+                                                  S.LTEOpr    -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.LTEOpr expr1 expr2 else error "Typer error in LTEOpr"
+                                                  S.GTEOpr    -> if (getExprAtomicType expr1 == S.Int64Type) then S.BinaryExpr S.BoolType S.GTEOpr expr1 expr2 else error "Typer error in GTEOpr"
+                                                  S.EqOpr     -> S.BinaryExpr S.BoolType S.EqOpr expr1 expr2
+                                                  S.NeqOpr    -> S.BinaryExpr S.BoolType S.NeqOpr expr1 expr2
+                                                  S.CAndOpr   -> if (getExprAtomicType expr1 == S.BoolType) then S.BinaryExpr S.BoolType S.CAndOpr expr1 expr2 else error "Typer error in CAndOpr"
+                                                  S.COrOpr    -> if (getExprAtomicType expr1 == S.BoolType) then S.BinaryExpr S.BoolType S.COrOpr expr1 expr2 else error "Typer error in COrOpr"
+                                  else error ("Left and Right Type of: " ++ (show op) ++ " are not Equal")
+
+{-
 isBoolTypeOpr :: (Eq a) => a -> Bool -- a als Spez Wert
-isBoolTypeOpr o | o == S.COrOpr   = True
-                | o == S.CAndOpr  = True
-                | o == S.NeqOpr   = True
-                | o == S.EqOpr    = True
-                | o == S.Not      = True
-                | otherwise     = False
+isBoolTypeOpr S.COrOpr   = True
+isBoolTypeOpr S.CAndOpr  = True
+isBoolTypeOpr S.NeqOpr   = True
+isBoolTypeOpr S.EqOpr    = True
+isBoolTypeOpr S.Not      = True
+isBoolTypeOpr _          = False
 
 isIntTypeOper :: (Eq a) => a -> Bool
-isIntTypeOper o | o == S.EqOpr            = True
-                | o == S.NeqOpr           = True
-                | not (isBoolTypeOpr o) = True
-                | otherwise             = False -- most possibly not triggered
-
+isIntTypeOper S.EqOpr   = True
+isIntTypeOper S.NeqOpr  = True
+isIntTypeOper o         = not (isBoolTypeOpr o)
+isIntTypeOper _         = False -- most possibly not triggered
+-}
 
 
 -- AtomicType setting
-setExprAtomicType :: S.Expr -> S.Expr
-setExprAtomicType e = case e of (S.LiteralExpr atomicType literal)                -> (S.LiteralExpr (getAtomicTypeOfLiteral literal) literal)
-                                (S.FunctionCallExpr atomicType ident exprl)       -> (S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent ident) ident exprl)
-                                (S.NameExpr atomicType ident bool)                -> (S.NameExpr (C.getAtomicTypeFromVarIdent ident) ident bool)
-                                (S.UnaryExpr atomicType unaryOpr expr)            -> (S.UnaryExpr (getExprAtomicType (setExprAtomicType expr)) unaryOpr expr)
-                                (S.BinaryExpr atomicType binaryOpr expr1 expr2)   -> (S.BinaryExpr (getExprAtomicType (setExprAtomicType expr1)) binaryOpr expr1 expr2)
-                                (S.ConditionalExpr atomicType expr1 expr2 expr3)  -> (S.ConditionalExpr (getExprAtomicType (setExprAtomicType expr2)) expr1 expr2 expr3)
+setExprAtomicType :: C.Context -> S.Expr -> S.Expr
+setExprAtomicType c e = case e of (S.LiteralExpr atomicType literal)                -> (S.LiteralExpr (getAtomicTypeOfLiteral literal) literal)
+                                  (S.FunctionCallExpr atomicType ident exprl)       -> (S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident exprl)
+                                  (S.NameExpr atomicType ident bool)                -> (S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool)
+                                  (S.UnaryExpr atomicType unaryOpr expr)            -> (S.UnaryExpr (getExprAtomicType (setExprAtomicType c expr)) unaryOpr expr)
+                                  (S.BinaryExpr atomicType binaryOpr expr1 expr2)   -> (S.BinaryExpr (getExprAtomicType (setExprAtomicType c expr1)) binaryOpr expr1 expr2)
+                                  (S.ConditionalExpr atomicType expr1 expr2 expr3)  -> (S.ConditionalExpr (getExprAtomicType (setExprAtomicType c expr2)) expr1 expr2 expr3)
 
 getExprAtomicType :: S.Expr -> S.AtomicType -- TODO needs to grab the type if Untyped
 getExprAtomicType (S.LiteralExpr atomicType _)            = if atomicType == S.Untyped then error "No AtomicType set" else atomicType
