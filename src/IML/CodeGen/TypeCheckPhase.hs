@@ -231,9 +231,9 @@ typeApplication formalParams globalImports args globInits =
   where
     globalsCheck _ [] = True
     globalsCheck imports (g:gs) =
-      case find (\(S.GlobalImport _ _ name) -> name == g) imports of
-        Nothing -> error $ printf "Tried to initialize global variable that is not used by procedure: %s." g
-        Just _ -> globalsCheck imports gs
+      if any (\(S.GlobalImport _ _ name) -> name == g) imports
+        then globalsCheck imports gs
+        else error $ printf "Tried to initialize global variable that is not used by procedure: %s." g
     typeArgs [] []         = []
     typeArgs _ []          = error "Not enough arguments in application."
     typeArgs [] _          = error "Too many arguments in application."
