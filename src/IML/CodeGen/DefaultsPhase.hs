@@ -9,15 +9,11 @@ import Control.Applicative ((<|>))
 -- Fills in missing modes into the whole program.
 -- See the other functions for a more thorough description.
 fillProgram :: S.Program -> S.Program
-fillProgram (S.Program name programParams globals body) =
-  S.Program name filledProgramParams filledGlobals body
-  where (functions, procedures, stores) = splitGlobalDeclarations globals
-        filledFuncs  = S.FDecl . fillFunction              <$> functions
-        filledProcs  = S.PDecl . fillProcedure             <$> procedures
-        filledStores = S.SDecl . fillStoreDeclarationModes <$> stores
-
-        filledGlobals = filledFuncs ++ filledProcs ++ filledStores
-
+fillProgram (S.Program name programParams stores functions procedures body) =
+  S.Program name filledProgramParams filledStores filledFuncs filledProcs body
+  where filledFuncs  = fillFunction              <$> functions
+        filledProcs  = fillProcedure             <$> procedures
+        filledStores = fillStoreDeclarationModes <$> stores
         filledProgramParams = fillProgParamModes <$> programParams
 
 -- |
