@@ -110,7 +110,7 @@ typeCheckLiteral S.Untyped lit@(S.BoolLiteral _) = S.LiteralExpr S.BoolType lit
 typeCheckLiteral S.Untyped lit@(S.Int64Literal _) = S.LiteralExpr S.Int64Type lit
 typeCheckLiteral _ _ = error "Cannot retype a literal."
 
--- | Type checks a x.
+-- | Type checks a function call.
 typeCheckFunctionCall :: (?context :: Context) => S.AtomicType -> S.Ident -> [S.Expr] -> S.Expr
 typeCheckFunctionCall _ funcName paramExprs = S.FunctionCallExpr returnType funcName typedParams
   where
