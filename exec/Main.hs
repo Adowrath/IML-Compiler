@@ -8,8 +8,13 @@ import IML.Token.Tokens
 import IML.Parser.Parser
 import IML.Parser.GeneralParser
 import IML.CodeGen.TypeCheck
+import IML.CodeGen.DefaultsPhase
+import IML.CodeGen.CodeGen
 
 import qualified IML.Parser.SyntaxTree    as Syntax
+import qualified VirtualMachineIO         as VM
+import qualified Locations
+import qualified BaseDecls
 
 -- Argument Dispatcher
 ignoreResult :: (a -> IO b) -> a -> IO ()
@@ -22,7 +27,10 @@ dispatch =
   [ 
     ("-t", ignoreResult tokenizeFile),
     ("-p", ignoreResult parseFile),
-    ("-c", ignoreResult checkParsed)
+    ("-d", ignoreResult defPhase),
+    ("-c", ignoreResult checkParsed),
+    ("-g", ignoreResult codeGen),
+    ("-v", ignoreResult execVM)
   ]
 
 tokenizeFile :: [String] -> IO [Token]
@@ -49,16 +57,69 @@ parser toks =
     [_]          -> error "internal error"
     []           -> error "syntax error"
 
+defPhase :: [String] -> IO Syntax.Program
+defPhase p = do
+    tokens <- tokenizeFile p
+    putStrLn "We paresed it as the following:"
+    let syntax_tree = parser tokens
+    print syntax_tree
+    putStrLn "We filled defaults as the following:"
+    let syntax_tree = fillProgram syntax_tree
+    print syntax_tree
+    return syntax_tree
+
 checkParsed :: [String] -> IO Syntax.Program
 checkParsed p = do
     tokens <- tokenizeFile p
     putStrLn "We paresed it as the following:"
     let syntax_tree = parser tokens
     print syntax_tree
+    putStrLn "We filled defaults as the following:"
+    let syntax_tree = fillProgram syntax_tree
+    print syntax_tree
     putStrLn "We checked it as the following:"
     let syntax_tree = typeChecks syntax_tree
     print syntax_tree
     return syntax_tree
+
+codeGen :: [String] -> IO VM.VMProgram
+codeGen p = do
+    tokens <- tokenizeFile p
+    putStrLn "We paresed it as the following:"
+    let syntax_tree = parser tokens
+    print syntax_tree
+    putStrLn "We filled defaults as the following:"
+    let syntax_tree = fillProgram syntax_tree
+    print syntax_tree
+    putStrLn "We checked it as the following:"
+    let syntax_tree = typeChecks syntax_tree
+    print syntax_tree
+    putStrLn "We generated the following VM-Code:"
+    let vmP = compileProgramm syntax_tree
+    print vmP
+    return vmP
+
+execVM :: [String] -> IO (Locations.Check BaseDecls.BaseIdent)
+execVM p = do
+    tokens <- tokenizeFile p
+    putStrLn "We paresed it as the following:"
+    let syntax_tree = parser tokens
+    print syntax_tree
+    putStrLn "We filled defaults as the following:"
+    let syntax_tree = fillProgram syntax_tree
+    print syntax_tree
+    putStrLn "We checked it as the following:"
+    let syntax_tree = typeChecks syntax_tree
+    print syntax_tree
+    putStrLn "We generated the following VM-Code:"
+    let vmP = compileProgramm syntax_tree
+    print vmP
+    VM.execProgram vmP
+
+
+-- TODO remove
+compileProgramm :: Syntax.Program -> VM.VMProgram
+compileProgramm = undefined
 
 main :: IO ()
 main = do
