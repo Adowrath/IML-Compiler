@@ -32,7 +32,7 @@ import IML.Token.Tokenizer
 import IML.CodeGen.DefaultsPhase as DP
 exampleSimpleAdd :: IO S.Program
 exampleSimpleAdd = do
-  content <- readFile "./examples/SimpleAdd.iml"
+  content <- readFile "./examples/pos/SimpleOperations-Pos.iml"
   let parseResult = parse parseProgram $ tokenize content
   return $ fst $ head parseResult
 
@@ -40,7 +40,7 @@ filledSimpleAdd :: IO S.Program
 filledSimpleAdd = DP.fillProgram <$> exampleSimpleAdd
 
 typedSimpleAdd :: IO S.Program
-typedSimpleAdd = typeChecks <$> exampleSimpleAdd
+typedSimpleAdd = typeChecks <$> filledSimpleAdd
 
 -- compiledProgram :: IO VM.VMProgram
 -- compiledProgram = compileProgram <$> typedSimpleAdd
@@ -142,13 +142,15 @@ checkCommands context commandList = checkCommands' [] context commandList
                                           else error "'While' supports only evaluation to boolean"
                                         where newExpr = checkExprSingle c expr -- set Type
                                               newCommandl = checkCommands c commandl
-
-                                      (S.CallCommand ident exprl1 idents)     ->
-                                        if typeOf (C.searchIdentProcedures c ident) == typeOf S.ProcedureDeclaration -- check Type
-                                          then S.CallCommand ident newExprl1 idents
-                                          else error ("Procedure identifier not found: " ++ ident) -- NO Following !! it gets checked during the "checkPDecl"
-                                        where newExprl1 = checkExpr c exprl1
-
+                                                          
+                                      (S.CallCommand ident exprl1 idents)     -> 
+                                        if (C.isProcInContext c ident)  -- check if all Types are correct
+                                          then if (C.isMatchingProcedure c ident newExprl1) -- TODO is exprl dijunct with idents ???
+                                                then S.CallCommand ident newExprl1 idents 
+                                                else error ("Missmatch Error: Procedure decalartion with call: \"" ++ ident ++ "\"")
+                                          else error ("Scope Error: Procedure \"" ++ ident ++ "\" is not in Scope.") -- NO Following !! it gets checked during the "checkPDecl"
+                                        where newExprl1 = checkExpr c exprl1 
+                                        
                                       (S.DebugInCommand expr)                 -> S.DebugInCommand newExpr
                                         where newExpr = checkExprSingle c expr -- set Type
 
@@ -165,17 +167,25 @@ checkExpr context exprList = checkExpr' [] context exprList
 checkExprSingle :: C.Context -> S.Expr -> S.Expr
 checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)                  -> S.LiteralExpr (getAtomicTypeOfLiteral literal) literal -- No Checks needed, just setting AtomicType
 
-                                (S.FunctionCallExpr atomicType ident exprl)         -> S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident newExprL -- NO FOLLOWING !! gets already checked by "checkFDecl"
-                                  where newExprL = checkExpr c exprl
+                                (S.FunctionCallExpr atomicType ident exprl)         -> 
+                                  if (C.isFunInContext c ident) -- Scope Check of identifier
+                                    then if (C.isMatchingFunction c ident newExprL) -- Check if all expected Types match with given ones (Pos, Amount, Eq)
+                                          then S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident newExprL -- NO FOLLOWING !! gets already checked by "checkFDecl"
+                                          else error ("Missmatch Error: Function declaration with call: \"" ++ ident ++ "\"")
+                                    else error ("Scope Error: Function \"" ++ ident ++ "\" is not in Scope.")
+                                  where newExprL = checkExpr c exprl 
 
-                                (S.NameExpr atomicType ident bool)                  -> S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool
+                                (S.NameExpr atomicType ident bool)                  -> 
+                                  if (C.isVarInContext c ident) -- Check if Ident in Scope
+                                    then S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool
+                                    else error ("Scope Error: Variable \"" ++ (show e) ++ "\" is not in Scope.")
 
                                 (S.UnaryExpr atomicType unaryOpr expr)              ->
                                   if unaryOpr == S.Not
-                                    then if (getExprAtomicType expr) == S.BoolType then (S.UnaryExpr S.BoolType unaryOpr newExpr) else error "'Not' does not match with any other type than boolean"
+                                    then if (getExprAtomicType newExpr) == S.BoolType then (S.UnaryExpr S.BoolType unaryOpr newExpr) else error "'Not' does not match with any other type than boolean"
                                     else if unaryOpr == S.UnaryPlus || unaryOpr == S.UnaryMinus
-                                          then if (getExprAtomicType expr) /= S.BoolType then (S.UnaryExpr S.Int64Type unaryOpr newExpr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
-                                          else error ("No recognisable unary operator: " ++ (show unaryOpr))
+                                          then if (getExprAtomicType newExpr) /= S.BoolType then (S.UnaryExpr S.Int64Type unaryOpr newExpr) else error "'UnaryPlus' and 'UnaryMinus' do not match with any other type than boolean"
+                                          else error ("Unidentifiable Error: Unary operator: " ++ (show unaryOpr))
                                   where newExpr = checkExprSingle c expr
 
                                 (S.BinaryExpr atomicType binaryOpr expr1 expr2)     -> binaryOprSolver binaryOpr nex1 nex2
