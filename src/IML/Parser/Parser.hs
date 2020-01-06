@@ -7,6 +7,7 @@ module IML.Parser.Parser
 
 import           Control.Applicative
 import           Data.Foldable            (foldl')
+import           Data.Functor             (($>), (<&>))
 import           IML.Parser.GeneralParser
 import qualified IML.Parser.SyntaxTree    as Syntax
 import           IML.Token.Tokens         (Token)
@@ -28,11 +29,10 @@ semiList :: Parser a -> Parser [a]
 semiList = someSep T.Semicolon
 
 parseIdentifier :: Parser Syntax.Ident
-parseIdentifier = do
-  tok <- item
-  case tok of
+parseIdentifier =
+  item >>= \case
     (T.Ident ident) -> return ident
-    _               -> empty
+    _ -> empty
 
 orEmpty :: Parser [a] -> Parser [a]
 orEmpty parseAs = parseAs <|> pure []
@@ -47,11 +47,10 @@ parseLeftRecursive nextStep opParser = _refold <$> nextStep <*> _parseTerms
 
 -- Internal helper
 parseOperatorToken :: Parser T.OpType
-parseOperatorToken = do
-  tok <- item
-  case tok of
+parseOperatorToken =
+  item >>= \case
     (T.Operator op) -> return op
-    _               -> empty
+    _ -> empty
 
 -- | program ::=
 --       PROGRAM IDENT progParamList
@@ -87,12 +86,11 @@ parseDecl = (Syntax.SDecl <$> parseStoDecl) <|> (Syntax.FDecl <$> parseFunDecl) 
 parseStoDecl :: Parser Syntax.StoreDeclaration
 parseStoDecl = Syntax.StoreDeclaration <$> optional _parseChangeMode <*> parseTypedIdent
   where
-    _parseChangeMode = do
-      tok <- item
-      case tok of
+    _parseChangeMode =
+      item >>= \case
         (T.ChangeMode T.Const) -> return Syntax.ConstChange
-        (T.ChangeMode T.Var)   -> return Syntax.VarChange
-        _                      -> empty
+        (T.ChangeMode T.Var) -> return Syntax.VarChange
+        _ -> empty
 
 -- | funDecl ::=
 --         FUN IDENT paramList
@@ -128,19 +126,17 @@ parseGlobImps = commaList parseGlobImp
 parseGlobImp :: Parser Syntax.GlobalImport
 parseGlobImp = Syntax.GlobalImport <$> optional _parseFlowMode <*> optional _parseChangeMode <*> parseIdentifier
   where
-    _parseFlowMode = do
-      tok <- item
-      case tok of
-        (T.FlowMode T.In)    -> return Syntax.InFlow
+    _parseFlowMode =
+      item >>= \case
+        (T.FlowMode T.In) -> return Syntax.InFlow
         (T.FlowMode T.InOut) -> return Syntax.InOutFlow
-        (T.FlowMode T.Out)   -> return Syntax.OutFlow
-        _                    -> empty
-    _parseChangeMode = do
-      tok <- item
-      case tok of
+        (T.FlowMode T.Out) -> return Syntax.OutFlow
+        _ -> empty
+    _parseChangeMode =
+      item >>= \case
         (T.ChangeMode T.Const) -> return Syntax.ConstChange
-        (T.ChangeMode T.Var)   -> return Syntax.VarChange
-        _                      -> empty
+        (T.ChangeMode T.Var) -> return Syntax.VarChange
+        _ -> empty
 
 -- | cpsDecl ::=
 --         decl {SEMICOLON decl}
@@ -162,19 +158,17 @@ parseProgParamList = parenList parseProgParam
 parseProgParam :: Parser Syntax.ProgParam
 parseProgParam = Syntax.ProgParam <$> optional _parseFlowMode <*> optional _parseChangeMode <*> parseTypedIdent
   where
-    _parseFlowMode = do
-      tok <- item
-      case tok of
-        (T.FlowMode T.In)    -> return Syntax.InFlow
+    _parseFlowMode =
+      item >>= \case
+        (T.FlowMode T.In) -> return Syntax.InFlow
         (T.FlowMode T.InOut) -> return Syntax.InOutFlow
-        (T.FlowMode T.Out)   -> return Syntax.OutFlow
-        _                    -> empty
-    _parseChangeMode = do
-      tok <- item
-      case tok of
+        (T.FlowMode T.Out) -> return Syntax.OutFlow
+        _ -> empty
+    _parseChangeMode =
+      item >>= \case
         (T.ChangeMode T.Const) -> return Syntax.ConstChange
-        (T.ChangeMode T.Var)   -> return Syntax.VarChange
-        _                      -> empty
+        (T.ChangeMode T.Var) -> return Syntax.VarChange
+        _ -> empty
 
 -- | paramList ::=
 --         LPAREN [param {COMMA param}] RPAREN
@@ -187,25 +181,22 @@ parseParam :: Parser Syntax.Param
 parseParam =
   Syntax.Param <$> optional _parseFlowMode <*> optional _parseMechMode <*> optional _parseChangeMode <*> parseTypedIdent
   where
-    _parseFlowMode = do
-      tok <- item
-      case tok of
-        (T.FlowMode T.In)    -> return Syntax.InFlow
+    _parseFlowMode =
+      item >>= \case
+        (T.FlowMode T.In) -> return Syntax.InFlow
         (T.FlowMode T.InOut) -> return Syntax.InOutFlow
-        (T.FlowMode T.Out)   -> return Syntax.OutFlow
-        _                    -> empty
-    _parseMechMode = do
-      tok <- item
-      case tok of
-        (T.MechMode T.Ref)  -> return Syntax.RefMech
+        (T.FlowMode T.Out) -> return Syntax.OutFlow
+        _ -> empty
+    _parseMechMode =
+      item >>= \case
+        (T.MechMode T.Ref) -> return Syntax.RefMech
         (T.MechMode T.Copy) -> return Syntax.CopyMech
-        _                   -> empty
-    _parseChangeMode = do
-      tok <- item
-      case tok of
+        _ -> empty
+    _parseChangeMode =
+      item >>= \case
         (T.ChangeMode T.Const) -> return Syntax.ConstChange
-        (T.ChangeMode T.Var)   -> return Syntax.VarChange
-        _                      -> empty
+        (T.ChangeMode T.Var) -> return Syntax.VarChange
+        _ -> empty
 
 -- | typedIdent ::=
 --         IDENT COLON ATOMTYPE
@@ -264,11 +255,9 @@ parseIdents = commaList parseIdentifier
 parseExpr :: Parser Syntax.Expr
 parseExpr = do
   condition <- parseTerm1
-  rest <- optional _parseRest
-  return $
-    case rest of
-      Nothing -> condition
-      Just (trueValue, falseValue) -> Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue
+  optional _parseRest <&> \case
+    Nothing -> condition
+    Just (trueValue, falseValue) -> Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue
   where
     _parseRest = (,) <$> (token T.CondOpr *> parseExpr) <*> (token T.Colon *> parseExpr)
 
@@ -277,29 +266,24 @@ parseExpr = do
 parseTerm1 :: Parser Syntax.Expr
 parseTerm1 = do
   left <- parseTerm2
-  rest <- optional _parseRest
-  return $
-    case rest of
-      Nothing          -> left
-      Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
+  optional _parseRest <&> \case
+    Nothing -> left
+    Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
   where
-    _parseRest = do
-      opT <- parseOperatorToken
-      case opT of
-        T.COr  -> (,) <$> pure Syntax.COrOpr <*> parseTerm1
-        T.CAnd -> (,) <$> pure Syntax.CAndOpr <*> parseTerm1
-        _      -> empty
+    _parseRest =
+      parseOperatorToken >>= \case
+        T.COr -> (,) <$> return Syntax.COrOpr <*> parseTerm1
+        T.CAnd -> (,) <$> return Syntax.CAndOpr <*> parseTerm1
+        _ -> empty
 
 -- | term2 ::=
 --         term3 [RELOPR term3]
 parseTerm2 :: Parser Syntax.Expr
 parseTerm2 = do
   left <- parseTerm3
-  rest <- optional _parseRest
-  return $
-    case rest of
-      Nothing          -> left
-      Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
+  optional _parseRest <&> \case
+    Nothing -> left
+    Just (op, right) -> Syntax.BinaryExpr Syntax.Untyped op left right
   where
     _parseRest = do
       opT <- parseOperatorToken
@@ -323,12 +307,11 @@ parseTerm3 :: Parser Syntax.Expr
 parseTerm3 = parseLeftRecursive parseTerm4 _parseAddOpr
   where
     _parseAddOpr :: Parser Syntax.BinaryOpr
-    _parseAddOpr = do
-      opT <- parseOperatorToken
-      case opT of
-        T.Plus  -> return Syntax.PlusOpr
+    _parseAddOpr =
+      parseOperatorToken >>= \case
+        T.Plus -> return Syntax.PlusOpr
         T.Minus -> return Syntax.MinusOpr
-        _       -> empty
+        _ -> empty
 
 -- | term4 ::=
 --         term4 term4'
@@ -341,13 +324,16 @@ parseTerm4 :: Parser Syntax.Expr
 parseTerm4 = parseLeftRecursive parseFactor _parseMulOpr
   where
     _parseMulOpr :: Parser Syntax.BinaryOpr
-    _parseMulOpr = do
-      opT <- parseOperatorToken
-      case opT of
+    _parseMulOpr =
+      parseOperatorToken >>= \case
         T.Times -> return Syntax.MultOpr
-        T.DivE  -> return Syntax.DivEOpr
-        T.ModE  -> return Syntax.ModEOpr
-        _       -> empty
+        T.DivE -> return Syntax.DivEOpr
+        T.DivF -> return Syntax.DivFOpr
+        T.DivT -> return Syntax.DivTOpr
+        T.ModE -> return Syntax.ModEOpr
+        T.ModF -> return Syntax.ModFOpr
+        T.ModT -> return Syntax.ModTOpr
+        _ -> empty
 
 -- | factor ::=
 --         LITERAL
@@ -357,9 +343,8 @@ parseTerm4 = parseLeftRecursive parseFactor _parseMulOpr
 parseFactor :: Parser Syntax.Expr
 parseFactor = _parseLiteral <|> _parseNameOrCall <|> _parseUnary <|> _parseParens
   where
-    _parseLiteral = do
-      tok <- item
-      case tok of
+    _parseLiteral =
+      item >>= \case
         (T.BoolLit boolValue) -> return $ Syntax.LiteralExpr Syntax.BoolType $ Syntax.BoolLiteral boolValue
         (T.IntLit int64Value) -> return $ Syntax.LiteralExpr Syntax.Int64Type $ Syntax.Int64Literal int64Value
         _ -> empty
@@ -368,15 +353,9 @@ parseFactor = _parseLiteral <|> _parseNameOrCall <|> _parseUnary <|> _parseParen
       _parseCallList ident <|> _parseWithInit ident <|> pure (Syntax.NameExpr Syntax.Untyped ident False)
       where
         _parseCallList i = Syntax.FunctionCallExpr Syntax.Untyped i <$> parseExprList
-        _parseWithInit i = do
-          _ <- token T.Init
-          return $ Syntax.NameExpr Syntax.Untyped i True
+        _parseWithInit i = token T.Init $> Syntax.NameExpr Syntax.Untyped i True
     _parseUnary = Syntax.UnaryExpr Syntax.Untyped <$> parseMonadicOpr <*> parseFactor
-    _parseParens = do
-      _ <- token T.LParen
-      expr <- parseExpr
-      _ <- token T.RParen
-      return expr
+    _parseParens = token T.LParen *> parseExpr <* token T.RParen
 
 -- | exprList ::=
 --         LPAREN [expr {COMMA expr}] RPAREN
@@ -387,10 +366,9 @@ parseExprList = parenList parseExpr
 --         NOT
 --       | ADDOPR
 parseMonadicOpr :: Parser Syntax.UnaryOpr
-parseMonadicOpr = do
-  op <- parseOperatorToken
-  case op of
-    T.Not   -> return Syntax.Not
-    T.Plus  -> return Syntax.UnaryPlus
+parseMonadicOpr =
+  parseOperatorToken >>= \case
+    T.Not -> return Syntax.Not
+    T.Plus -> return Syntax.UnaryPlus
     T.Minus -> return Syntax.UnaryMinus
-    _       -> empty
+    _ -> empty

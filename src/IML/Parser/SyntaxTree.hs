@@ -176,7 +176,11 @@ data UnaryOpr
 data BinaryOpr
   = MultOpr
   | DivEOpr
+  | DivFOpr
+  | DivTOpr
   | ModEOpr
+  | ModFOpr
+  | ModTOpr
   | PlusOpr
   | MinusOpr
   | LTOpr

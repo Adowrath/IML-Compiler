@@ -35,14 +35,12 @@ data Token =
 DivE/ModE is Euclidean
 *F is Floored
 *T is Truncated
-
-And vs. CAnd? We do not know.
 -}
 -- |
 -- The different types of operators that IML supports.
 data OpType =
     Plus | Minus | Times
-    | DivE | ModE -- DvF | ModF | DivT | ModT
+    | DivE | ModE | DivF | ModF | DivT | ModT
     | LessThan | GreaterThan | LessThanEquals | GreaterThanEquals | Equals | NotEquals
     | Not {- And | Or -} | CAnd | COr
     deriving (Show, Eq)
@@ -66,6 +64,8 @@ keywordList =
     , ("debugin",    DebugIn         )
     , ("debugout",   DebugOut        )
     , ("divE",       Operator DivE   )
+    , ("divF",       Operator DivF   )
+    , ("divT",       Operator DivT   )
     , ("do",         Do              )
     , ("else",       Else            )
     , ("endfun",     Endfun          )
@@ -85,6 +85,8 @@ keywordList =
     , ("int1024",    Type Int1024Type)
     , ("local",      Local           )
     , ("modE",       Operator ModE   )
+    , ("modF",       Operator ModF   )
+    , ("modT",       Operator ModT   )
     , ("not",        Operator Not    )
     , ("out",        FlowMode Out    )
     , ("proc",       Proc            )

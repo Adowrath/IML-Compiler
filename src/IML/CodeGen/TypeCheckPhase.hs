@@ -108,9 +108,9 @@ typeCheckExpr (S.ConditionalExpr tp condition trueExpr falseExpr) = typeCheckCon
 
 -- | Type checks a literal expression.
 typeCheckLiteral :: S.AtomicType -> S.Literal -> Scoped S.Expr
-typeCheckLiteral S.Untyped lit@(S.BoolLiteral _) = pure $ S.LiteralExpr S.BoolType lit
-typeCheckLiteral S.Untyped lit@(S.Int64Literal _) = pure $ S.LiteralExpr S.Int64Type lit
-typeCheckLiteral _ _ = fail "Cannot retype a literal."
+typeCheckLiteral S.BoolType lit@(S.BoolLiteral _) = pure $ S.LiteralExpr S.BoolType lit
+typeCheckLiteral S.Int64Type lit@(S.Int64Literal _) = pure $ S.LiteralExpr S.Int64Type lit
+typeCheckLiteral tp lit = fail $ printf "Untyped or badly typed literal: %s with type %s." (show lit) (show tp)
 
 -- | Type checks a function call.
 typeCheckFunctionCall :: S.AtomicType -> S.Ident -> [S.Expr] -> Scoped S.Expr
@@ -146,7 +146,11 @@ typeCheckBinary _ opr leftExpr rightExpr = do
       (S.Int64Type, S.MinusOpr, S.Int64Type) -> pure S.Int64Type
       (S.Int64Type, S.MultOpr, S.Int64Type) -> pure S.Int64Type
       (S.Int64Type, S.DivEOpr, S.Int64Type) -> pure S.Int64Type
+      (S.Int64Type, S.DivFOpr, S.Int64Type) -> pure S.Int64Type
+      (S.Int64Type, S.DivTOpr, S.Int64Type) -> pure S.Int64Type
       (S.Int64Type, S.ModEOpr, S.Int64Type) -> pure S.Int64Type
+      (S.Int64Type, S.ModFOpr, S.Int64Type) -> pure S.Int64Type
+      (S.Int64Type, S.ModTOpr, S.Int64Type) -> pure S.Int64Type
       (S.Int64Type, S.PlusOpr, S.Int64Type) -> pure S.Int64Type
       (S.Int64Type, S.LTEOpr, S.Int64Type) -> pure S.BoolType
       (S.Int64Type, S.GTEOpr, S.Int64Type) -> pure S.BoolType
