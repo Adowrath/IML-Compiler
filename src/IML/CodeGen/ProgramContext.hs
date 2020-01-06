@@ -4,6 +4,11 @@ module IML.CodeGen.ProgramContext
   , getAtomicTypeFromVarIdent
   , getAtomicTypeFromFuncIdent
   , searchIdentProcedures
+  , isVarInContext
+  , isFunInContext
+  , isProcInContext
+  , isMatchingFunction
+  , isMatchingProcedure
   ) where
 
 import           Control.Applicative   ((<|>))
@@ -25,7 +30,7 @@ searchIdentLocals :: Context -> Ident -> StoreDeclaration
 searchIdentLocals c i =
   fromMaybe (error $ "Local identifier can not be found: " ++ i) (find (\x -> getIdent x == i) (locals c))
 
-searchIdentGlobals :: Context -> Ident -> GlobalImport -- TODO Typ Spezifizieren nehmen !!!
+searchIdentGlobals :: Context -> Ident -> GlobalImport
 searchIdentGlobals c i =
   fromMaybe (error $ "Global identifier can not be found: " ++ i) (find (\x -> getIdent x == i) (globals c))
 
@@ -114,6 +119,50 @@ checkVarIdentPD c
 checkContextIdentifiers :: Context -> Bool
 checkContextIdentifiers c = checkFunProPD c && checkVarIdentPD c
 
+{-| 
+  Check if an variable identifier can be found in Context.
+-}
+isVarInContext :: Context -> Ident -> Bool
+isVarInContext c i = isInProgParams || isInParams || isInGlobals || isInLocals
+  where isInProgParams  = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (progParams c))
+        isInParams      = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (params c))
+        isInGlobals     = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (globals c))
+        isInLocals      = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (locals c))
+
+{-| 
+  Check if a Function identifier can be found in Context.
+-}
+isFunInContext :: Context -> Ident -> Bool
+isFunInContext c i = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (functions c))
+
+{-| 
+  Check if a Function Header matches with Feunction Call.
+  Based on suplied Type with Positions.
+-}
+isMatchingFunction :: Context -> Ident -> [Expr] -> Bool
+isMatchingFunction c i es = allMatching
+    where allMatching = foldl (\acc x -> acc && x) True (zipWith (\fp -> \e -> getAtomicType c fp == getAtomicType c e) fParams es)
+          fParams = getParams (searchIdentFunctions c i)
+          getParams (FunctionDeclaration _ params _ _ _ _) = params
+
+{-| 
+  Check if a Procedure identifier can be found in Context.
+-}
+isProcInContext :: Context -> Ident -> Bool
+isProcInContext c i = foldl (\acc x -> acc || x) False (map (\x -> getIdent x == i) (procedures c))
+
+{-| 
+  Check if a Procedure Header matches with Procedure Call.
+  Based on suplied Type with Positions.
+-}
+isMatchingProcedure :: Context -> Ident -> [Expr] -> Bool
+isMatchingProcedure c i es = allMatching
+    where allMatching = foldl (\acc x -> acc && x) True (zipWith (\fp -> \e -> getAtomicType c fp == getAtomicType c e) pParams es)
+          pParams = getParams (searchIdentProcedures c i)
+          getParams (ProcedureDeclaration _ params _ _ _) = params
+
+
+
 class HasAtomicType a where
   getAtomicType :: Context -> a -> AtomicType
 
@@ -140,6 +189,14 @@ instance HasAtomicType Param where
 
 instance HasAtomicType TypedIdentifier where
   getAtomicType _ (TypedIdentifier _ atomicType) = atomicType
+
+instance HasAtomicType Expr where
+  getAtomicType _ (LiteralExpr atomicType _)          = atomicType
+  getAtomicType _ (FunctionCallExpr atomicType _ _)   = atomicType
+  getAtomicType _ (NameExpr atomicType _ _)           = atomicType
+  getAtomicType _ (UnaryExpr atomicType _ _)          = atomicType
+  getAtomicType _ (BinaryExpr atomicType _ _ _)       = atomicType
+  getAtomicType _ (ConditionalExpr atomicType _ _ _)  = atomicType
 
 class HasIdent a where
   getIdent :: a -> Ident
