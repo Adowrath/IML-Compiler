@@ -1,0 +1,5 @@
+// unequal branching types
+program ternaereOperatorNeg()
+do
+  debugout true ? false : 2
+endprogram

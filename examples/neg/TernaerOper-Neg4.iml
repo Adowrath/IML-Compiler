@@ -1,0 +1,5 @@
+// syntax error 2 expr1
+program ternaereOperatorNeg()
+do
+  debugout true ? : 2
+endprogram

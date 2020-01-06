@@ -1,0 +1,5 @@
+// no bool type as condition
+program ternaereOperatorNeg()
+do
+  debugout 1 ? 1 : 2
+endprogram

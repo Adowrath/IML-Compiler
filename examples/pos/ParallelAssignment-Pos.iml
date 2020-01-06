@@ -1,17 +1,5 @@
 program parallelAssignmentPos()
 global
-  fun ri3()
-  returns m: int64
-  do
-    m init := 3
-  endfun;
-  fun rbf()
-  returns m: bool
-  do
-    m init := false
-  endfun
-
-do
   var i1: int64;
   var i2: int64;
   var il: int64;
@@ -19,6 +7,19 @@ do
   var b2: bool;
   var bl: bool;
 
+  fun ri3()
+  returns m: int64
+  do
+    m init := 3
+  endfun;
+
+  fun rbf()
+  returns m: bool
+  do
+    m init := false
+  endfun
+
+do
   // init with PA
   i1 init, i2 init, b1 init, b2 init := 1 , 2, true, false;
 
@@ -29,7 +30,7 @@ do
   i1, i2, b1, b2 := i2, i1, b2, b1;
 
   // return values with PA
-  i1, b1, := ri3(), rbf();
+  i1, b1 := ri3(), rbf();
 
   // operation evaluation with PA
   i1, i2, b1, b2 := i1 + i2, i1 * i2, b1 = b2, not b2

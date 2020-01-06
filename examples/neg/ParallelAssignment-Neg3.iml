@@ -1,10 +1,11 @@
 // type missmatch through binary operator
 program parallelAssignmentNeg()
-do
+global
   var i1: int64;
   var i2: int64;
   var b1: bool;
-  var b2: bool;
+  var b2: bool
+do
   i1 init := 1;
   i2 init := 2;
   b1 init := false;

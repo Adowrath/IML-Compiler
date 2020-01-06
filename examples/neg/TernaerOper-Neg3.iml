@@ -1,0 +1,5 @@
+// syntax error 1 condition
+program ternaereOperatorNeg()
+do
+  debugout ? 1 : 2
+endprogram

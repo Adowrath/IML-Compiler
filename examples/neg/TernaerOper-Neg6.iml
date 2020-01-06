@@ -1,0 +1,8 @@
+// command instead of expression (syntax error)
+program ternaereOperatorNeg()
+global
+  var i: int64;
+  var b: bool
+do
+  debugout true ? i init, b init := 1, bool : 2
+endprogram
