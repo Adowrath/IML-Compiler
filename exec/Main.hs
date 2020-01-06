@@ -59,41 +59,23 @@ parser toks =
 
 defPhase :: [String] -> IO Syntax.Program
 defPhase p = do
-    tokens <- tokenizeFile p
-    putStrLn "We paresed it as the following:"
-    let syntax_tree = parser tokens
-    print syntax_tree
+    syntax_tree <- parseFile p
     putStrLn "We filled defaults as the following:"
-    let syntax_tree = fillProgram syntax_tree
-    print syntax_tree
-    return syntax_tree
+    let filled_syntax_tree = fillProgram syntax_tree
+    print filled_syntax_tree
+    return filled_syntax_tree
 
 checkParsed :: [String] -> IO Syntax.Program
 checkParsed p = do
-    tokens <- tokenizeFile p
-    putStrLn "We paresed it as the following:"
-    let syntax_tree = parser tokens
-    print syntax_tree
-    putStrLn "We filled defaults as the following:"
-    let syntax_tree = fillProgram syntax_tree
-    print syntax_tree
+    syntax_tree <- defPhase p
     putStrLn "We checked it as the following:"
-    let syntax_tree = typeChecks syntax_tree
-    print syntax_tree
-    return syntax_tree
+    let checked_syntax_tree = typeChecks syntax_tree
+    print checked_syntax_tree
+    return checked_syntax_tree
 
 codeGen :: [String] -> IO VM.VMProgram
 codeGen p = do
-    tokens <- tokenizeFile p
-    putStrLn "We paresed it as the following:"
-    let syntax_tree = parser tokens
-    print syntax_tree
-    putStrLn "We filled defaults as the following:"
-    let syntax_tree = fillProgram syntax_tree
-    print syntax_tree
-    putStrLn "We checked it as the following:"
-    let syntax_tree = typeChecks syntax_tree
-    print syntax_tree
+    syntax_tree <- checkParsed p
     putStrLn "We generated the following VM-Code:"
     let vmP = compileProgramm syntax_tree
     print vmP
@@ -101,19 +83,7 @@ codeGen p = do
 
 execVM :: [String] -> IO (Locations.Check BaseDecls.BaseIdent)
 execVM p = do
-    tokens <- tokenizeFile p
-    putStrLn "We paresed it as the following:"
-    let syntax_tree = parser tokens
-    print syntax_tree
-    putStrLn "We filled defaults as the following:"
-    let syntax_tree = fillProgram syntax_tree
-    print syntax_tree
-    putStrLn "We checked it as the following:"
-    let syntax_tree = typeChecks syntax_tree
-    print syntax_tree
-    putStrLn "We generated the following VM-Code:"
-    let vmP = compileProgramm syntax_tree
-    print vmP
+    vmP <- codeGen p
     VM.execProgram vmP
 
 
