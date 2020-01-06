@@ -1,10 +1,16 @@
 module IML.CodeGen.CompileUtils
-  ( getType
+  ( foldMapM
+  , getType
   , Context(..)
   , buildSubcontext
   ) where
 
+import           Data.Foldable         (fold)
 import qualified IML.Parser.SyntaxTree as S
+
+-- | foldMapM is like a flatMap intertwined with a monad.
+foldMapM :: (Monoid b, Traversable t, Monad m) => (a -> m b) -> t a -> m b
+foldMapM f x = fold <$> mapM f x
 
 -- | Extracts the type from a given expression.
 getType :: S.Expr -> S.AtomicType
