@@ -1,7 +1,8 @@
 .stack-work
 .idea
 *.iml
-!examples/*.iml
+!examples/**
+!examples/*
 .vscode
 *.exe
 

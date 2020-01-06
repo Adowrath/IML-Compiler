@@ -1,0 +1,77 @@
+program SimpleAdd(
+    in  const inI:  int64,
+    out const outI: int64,
+    in  const inB:  bool,
+    out const outB: bool
+)
+global
+    var     globVI: int64;
+    const   globCI: int64
+    ;
+    var     globVB: bool;
+    const   globCB: bool
+    ;
+    // Rutinen können nur für das gesammte Programm erstellter werden (Top Level) -> Können nicht in Routinen deklariert werden (S.36)
+    // Alle Interaktiven Variablen für eine Routine sind im Header spezifiziert
+    // Funktionen dürfen keine out / inout Parameter haben (S.38)
+    fun funRetInt(
+        in copy const   x: int64,
+        out     const   y: int64,
+        inout   var     z: bool,
+        ref     const   b: bool
+    )
+    // Funktionen -> Immer return Value, keine State changes
+    // Return Values können Const sein (S.37)
+    //returns const funRI:int64
+    //do
+
+    //endfun;
+    //fun funRetBool(
+
+    //)
+    // Return Values können Var sein (S.37)
+    //returns var funRB:bool
+    //do
+
+    //endfun
+    //;
+    //proc proced(
+
+    //)
+    //global
+
+    //local
+
+    //do
+
+    //endproc
+do
+    // einfache Zuweisung
+    globVI init := 0;
+    globCI init := 2;
+    globVB init := True;
+    globCB init := True;
+
+    // einfache Updates
+    globVI := 1;
+    globVB := False;
+
+    // 
+
+endprogram
+    // If darf nur in beiden Branches Initailisieren oder Nicht (S.33)
+    // Keine Init's in einem Loop (S.33)
+    // Ein Init darf nur 1mal Vorkommen pro Identifier (S.33)
+    // Loop Body 0 oder x mal ausführen (S.33)
+    // Const -> 1mal Init, keine Updates danach (erlaubt nur Init, Read) (S.35)
+    // Var -> keine Regeln (erlaubt Init, Read, Update) (S.35)
+    // Copy macht eine Kopie des Vertes (S.39)
+    // Ref refernzier direkt den Paramter (S39)
+    // in-flow -> caller gibt callee Informationen , nichts weiteres (nur Read) (S.43)
+    // out-flow -> callee gibt caller Informationen , nichts weiteres (nur Init (Muss!) oder Update, kein Read) (S.43)
+    // inout-flow -> beide richtungen (= wie in-flow & out-flow) (nur Read und Update) (S.43)
+    // "in ref var" -> Compile-Time-Error (S.44)
+    // keine "inout const"
+
+
+
