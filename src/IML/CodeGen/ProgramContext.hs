@@ -167,11 +167,6 @@ class HasAtomicType a where
   getAtomicType :: Context -> a -> AtomicType
 
 -- HELPER
-instance HasAtomicType Declaration where
-  getAtomicType c (SDecl storeDeclaration) = getAtomicType c storeDeclaration
-  getAtomicType c (FDecl functionDeclaration) = getAtomicType c functionDeclaration
-  getAtomicType _ (PDecl _) = error "Procedures don't have a (return) type."
-
 instance HasAtomicType StoreDeclaration where
   getAtomicType c (StoreDeclaration _ typedIdentifier) = getAtomicType c typedIdentifier
 
@@ -206,12 +201,7 @@ class HasIdent a where
   findByIdent i = find (\x -> getIdent x == i)
 
 instance HasIdent Program where
-  getIdent (Program ident _ _ _) = ident
-
-instance HasIdent Declaration where
-  getIdent (SDecl storeDeclaration)     = getIdent storeDeclaration
-  getIdent (FDecl functionDeclaration)  = getIdent functionDeclaration
-  getIdent (PDecl procedureDeclaration) = getIdent procedureDeclaration
+  getIdent (Program ident _ _ _ _ _) = ident
 
 instance HasIdent StoreDeclaration where
   getIdent (StoreDeclaration _ typedIdentifier) = getIdent typedIdentifier

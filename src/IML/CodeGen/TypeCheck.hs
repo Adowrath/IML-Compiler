@@ -46,42 +46,22 @@ typedSimpleAdd = typeChecks <$> filledSimpleAdd
 -- compiledProgram = compileProgram <$> typedSimpleAdd
 -----------------------
 
--- 3 Main-Groups
--- TODO Verbessrbar siehe DefaultPhases fillProgram
-getFunctions :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [S.FunctionDeclaration]
-getFunctions (fs, _, _) = fs
-
-getProcedures :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [S.ProcedureDeclaration]
-getProcedures (_, ps, _) = ps
-
-getStoreDeclarations :: ([S.FunctionDeclaration], [S.ProcedureDeclaration], [S.StoreDeclaration]) -> [S.StoreDeclaration]
-getStoreDeclarations (_, _, ss) = ss
-
-
 typeChecks :: S.Program -> S.Program
-typeChecks (S.Program ident programParams declarations commands) =
+typeChecks (S.Program ident programParams stores funcs procs commands) =
   if C.checkContextIdentifiers globalContext
-    then S.Program ident programParams newDeclarations newCommands
+    then S.Program ident programParams stores newFuncs newProcs newCommands
     else error "Context Error: Programm Global Identifier Fail"
-  where newDeclarations = checkDeclarations globalContext declarations
+  where newFuncs        = checkFDecl globalContext <$> funcs
+        newProcs        = checkPDecl globalContext <$> procs
+
         newCommands     = checkCommands globalContext commands
         globalContext = C.Context {
                         C.progParams  = programParams,
-                        C.functions   = getFunctions splitedDecs,
-                        C.procedures  = getProcedures splitedDecs,
+                        C.functions   = funcs,
+                        C.procedures  = procs,
                         C.params      = [],
                         C.globals     = [],
-                        C.locals      = getStoreDeclarations splitedDecs }
-        splitedDecs = splitGlobalDeclarations declarations
-
-
-checkDeclarations :: C.Context -> [S.Declaration] -> [S.Declaration]
-checkDeclarations context declarationList = checkDeclarations' [] context declarationList
-    where checkDeclarations' acc _ [] = acc -- basecase
-          checkDeclarations' acc c (d:ds) = checkDeclarations' (acc ++ decel:[]) c ds
-            where decel = case d of (S.FDecl fd) -> (S.FDecl (checkFDecl c fd))
-                                    (S.PDecl pd) -> (S.PDecl (checkPDecl c pd))
-                                     -- S.SDecl -> (S.SDecl (checkSDecl c d)) -- is not needed due to sdecl does not need any checks
+                        C.locals      = stores }
 
 
 checkFDecl :: C.Context -> S.FunctionDeclaration -> S.FunctionDeclaration
