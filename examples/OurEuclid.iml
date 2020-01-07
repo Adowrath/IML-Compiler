@@ -1,0 +1,11 @@
+program euclidGGT
+  (a: int64, b: int64)
+global
+  fun euclid(a: int64, b: int64)
+  returns c: int64
+  do
+    c init := b == 0 ? a : euclid(b, a modE b)
+  endfun
+do
+  debugout euclid(a, b)
+endprogram
