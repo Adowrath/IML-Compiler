@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="de">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,10 +8,10 @@
 
 		<link rel="stylesheet" href="css/reset.css">
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" id="theme" href="css/theme/black.css">
+		<link rel="stylesheet" id="theme" href="css/theme/league.css">
 
 		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" id="syntax" href="lib/css/darcula.css">
+		<link rel="stylesheet" id="syntax" href="lib/css/monokai.css">
 
 		<!-- Printing and PDF exports -->
 		<script>
@@ -25,37 +25,6 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section id="themes">
-					<h2>Themes</h2>
-					<p>
-						Was ist am lesbarsten?<br>
-						<!-- Hacks to swap themes after the page has loaded. Not flexible and only intended for the reveal.js demo deck. -->
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/black.css'); return false;">Black</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/white.css'); return false;">White</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/league.css'); return false;">League</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/sky.css'); return false;">Sky</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/beige.css'); return false;">Beige</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/simple.css'); return false;">Simple</a> <br>
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/serif.css'); return false;">Serif</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/blood.css'); return false;">Blood</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/night.css'); return false;">Night</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/moon.css'); return false;">Moon</a> -
-						<a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/solarized.css'); return false;">Solarized</a>
-					</p>
-					<p>
-						Syntax:
-						<a href="#" onclick="document.getElementById('syntax').setAttribute('href','lib/css/darcula.css'); return false;">Darcula</a> -
-						<a href="#" onclick="document.getElementById('syntax').setAttribute('href','lib/css/monokai.css'); return false;">Monokai</a> -
-						<a href="#" onclick="document.getElementById('syntax').setAttribute('href','lib/css/zenburn.css'); return false;">Zenburn</a>
-					</p>
-					<pre><code class="hljs iml" data-trim>
-						proc() fun() int64
-						a init := 12;
-						b init := 20;
-					</code></pre>
-				</section>
-
-
 				<section id="title-slide">
 					<h2 class="fragment">
 						Parallel Assignment<br/>
@@ -80,7 +49,7 @@
 							a, b, c = 1, 2, 3
 							print(a, b, c) // "1 2 3"
 						</code></pre>
-						<span class="fragment">
+						<div class="fragment">
 							IML
 							<pre><code class="hljs iml" data-trim>
 								// with var a, b, c: int64;
@@ -89,7 +58,7 @@
 								a, b, c init := b, a, a + b;
 								// a = 2, b = 1, c = 3
 							</code></pre>
-						</span>
+						</div>
 					</section>
 					<section id="overview-parass-2">
 						<h4>Anwendungsfälle</h4><br/>
@@ -126,23 +95,21 @@
 				</section>
 
 
-				<section id="syntax"><h2>Syntax</h2></section>
+				<section id="syntax-title"><h2>Anpassungen der Spezifikation</h2></section>
 
-
+                <!-- TODO: Nicht abwechselnd, sondern alles pro Feature auf einmal. -->
 				<section id="syntax-parass">
 					<h3>Parallel Assignment</h3>
 					<section id="syntax-parass-1">
 						<h4>Lexikalische Syntax</h4>
-						<ul>
-						<li class="fragment">Unverändert!</li>
-						<li class="fragment"><code>:=&nbsp;&nbsp;&rArr;&nbsp;&nbsp;BECOMES</code></li>
-						<li class="fragment"><code>,&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;COMMA</code></li>
+						<ul class="fragment">
+						<li>Unverändert!</li>
+						<li><code>:=&nbsp;&nbsp;&rArr;&nbsp;&nbsp;BECOMES</code></li>
+						<li><code>,&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;COMMA</code></li>
 						</ul>
-					</section>
-
-					<section id="syntax-parass-2">
-						<h4>Grammatiksyntax</h4>
-						<pre><code class="hljs ebnf" data-trim data-line-numbers="2,9">
+                        <br>
+						<h4 class="fragment">Grammatiksyntax</h4>
+						<pre class="fragment"><code class="hljs ebnf" data-trim data-line-numbers="2,9">
 							cmd ::= SKIP
 								 | exprs BECOMES exprs // expr BECOMES expr
 								 | IF expr THEN cpsCmd ELSE cpsCmd ENDIF
@@ -153,12 +120,6 @@
 
 							exprs ::= expr {COMMA expr}
 						</code></pre>
-						
-						<aside class="notes">
-							Problem:<br>
-							Gleiche Anzahl Argumente nicht Überprüfbar<br>
-							Typengleichheit an den Stellen kann nicht überprüft werden
-						</aside>
 					</section>
 				</section>
 
@@ -180,9 +141,9 @@
 						</table>
 					</section>
 
-					<section id="syntax-tercon-2" data-transition="fade">
+					<section id="syntax-tercon-2">
 						<h4>Grammatiksyntax</h4>
-						<pre><code class="hljs ebnf" data-trim data-line-numbers>
+						<pre class="fragment"><code class="hljs ebnf" data-trim data-line-numbers>
 							// Expressions:
 
 							expr  ::=  term1 | term1 BOOLOPR expr
@@ -190,23 +151,7 @@
 							term2 ::=  term3 | term2 ADDOPR  term3
 							term3 ::= factor | term3 MULTOPR factor
 						</code></pre>
-					</section>
-
-					<section id="syntax-tercon-3" data-transition="fade">
-						<h4>Grammatiksyntax</h4>
-						<pre><code class="hljs ebnf" data-trim data-line-numbers>
-							// Expressions:
-
-							expr  ::=  term2 | term2 BOOLOPR expr
-							term2 ::=  term3 | term3 RELOPR  term3
-							term3 ::=  term4 | term3 ADDOPR  term4
-							term4 ::= factor | term4 MULTOPR factor
-						</code></pre>
-					</section>
-
-					<section id="syntax-tercon-3" data-transition="fade">
-						<h4>Grammatiksyntax</h4>
-						<pre><code class="hljs ebnf" data-trim data-line-numbers>
+						<pre class="fragment"><code class="hljs ebnf" data-trim data-line-numbers>
 							// Expressions:							
 							expr  ::=  term1 | term1 CONDOPR expr COLON expr
 							term1 ::=  term2 | term2 BOOLOPR term1
@@ -224,23 +169,8 @@
 				<section id="restrictions-parass">
 					<h3>Parallel Assignment</h3>
 					<section id="restrictions-parass-1">
-						<h4>Kontexteinschränkungen</h4>
-						<ul>
-						<li><code>init</code> pro Variable</li>
-						</ul>
-						<pre><code class="hljs iml" data-trim>
-							// with var a, b, c: int64;
-							b init := 1;
-							// b = 1
-							a init, b, c init := 1, 2, 3;
-							// a = 1, b = 2, c = 3
-						</code></pre>
-					</section>
-					<section id="restrictions-parass-2">
 						<h4>Typeinschränkungen</h4>
 						<ul>
-						<li class="fragment">
-							Einzeln uneingeschränkt (<code>bool</code>, <code>int64</code>)</li>
 						<li class="fragment">
 							Gleiche Zahl und Reihenfolge
 							<pre><code class="hljs iml" data-trim>
@@ -259,298 +189,22 @@
 					<h3>Ternäres Konditional</h3>
 					<section id="restrictions-tercon-1">
 						<h4>Kontexteinschränkungen</h4>
-						<table>
-							<tr>
-								<td style="vertical-align: top;"><code>lExpr</code></td>
-								<td>
-									<ul>
-									<li class="fragment">Liefert Adresse</li>
-									<li class="fragment">Momentan: Variable</li>
-									</ul>
-								</td>
-							</tr>
-							<tr class="fragment">
-								<td style="vertical-align: top;"><code>rExpr</code></td>
-								<td>
-									<ul>
-									<li class="fragment">Liefert Wert</li>
-									<li class="fragment"><code>17</code></li>
-									<li class="fragment"><code>a</code></li>
-									<li class="fragment"><code>x + 2</code></li>
-									<li class="fragment"><code>f(17)</code></li>
-									<li class="fragment"><em><code>x == 10 ? 1 : 0</code></em></li>
-									</ul>
-								</td>
-							</tr>
-						</table>
+						<code>rExpr</code>, liefert keine Adresse.
 					</section>
 					<section id="restrictions-tercon-2">
-						<h4>Kontexteinschränkungen</h4>
-						<pre><code class="hljs iml" data-trim data-noescape>
-							proc p1(in    copy   a:int64, in    ref  b:int64,
-							        inout copy   c:int64, inout ref  d:int64,
-							        out   copy   e:int64, out   ref  f:int64)
-							do
-							    // Implementation omitted.
-							endproc;
-
-							lExpr := rExpr;
-							p1(<span class="fragment">rExpr</span>, <span class="fragment">lExpr</span>,
-							   <span class="fragment">lExpr</span>, <span class="fragment">lExpr</span>,
-							   <span class="fragment">lExpr</span>, <span class="fragment">lExpr</span>);
-						</code></pre>
-					</section>
-					<section id="restrictions-tercon-3">
 						<h4>Typeinschränkungen</h4>
-						<code>e1 ? e2 : e3</code><br>
-						<ul>
-							<li class="fragment"><code>type(e1) == bool</code></li>
-							<li class="fragment"><code>type(e2) == type(e3)</code></li>
-							<li class="fragment"><code>type(e1 ? e2 : e3) == type(e2)</code></li>
+						<code>c ? $e_1$ : $e_2$</code><br>
+                        <span class="fragment">
+                            $$ \frac{\Gamma \vdash c\!: bool,\ e_1\!: \tau, e_2\!: \tau}
+                                {\Gamma \vdash (c\ ?\ e_1 : e_2)\!: \tau} $$
+                        </span>
+                        <ul>
+							<li class="fragment"><code>type($c$) == $bool$</code></li>
+							<li class="fragment"><code>type($e_1$) == type($e_2$)</code></li>
+							<li class="fragment"><code>type($c\ ?\ e_1 : e_2$) == type($e_1$)</code></li>
 						</ul>
 					</section>
 				</section>
-
-
-				<section id="comparisons"><h2>Vergleiche</h2></section>
-
-
-				<section id="comparisons-parass">
-					<h3>Parallel Assignment</h3>
-					<section id="comparisons-parass-1">
-						<table>
-							<tr class="fragment" data-fragment-index="1">
-								<td>
-									<span class="fragment highlight-red" data-fragment-index="5">
-									Ruby<br>Python
-									</span>
-								</td>
-								<td>
-									<pre style="width: 100%;"><code class="hljs python" data-trim>
-										a, b, c = 1, 2, 3
-										a, b    = b, a
-										# a  b  c
-										# 2  1  3
-									</code></pre>
-								</td>
-							</tr>
-							<tr class="fragment" data-fragment-index="2">
-								<td>Golang</td>
-								<td>
-									<pre style="width: 100%;"><code class="hljs go" data-trim>
-										a, b, c := 1, 2, 3
-										a, b     = b, a
-									</code></pre>
-								</td>
-							</tr>
-							<tr class="fragment" data-fragment-index="3">
-								<td>Perl</td>
-								<td>
-									<pre style="width: 100%;"><code class="hljs javascript" data-trim>
-										my ($a, $b, $c) = (1, 2, 3);
-										($a, $b)     = ($b, $a);
-									</code></pre>
-								</td>
-							</tr>
-							<tr class="fragment" data-fragment-index="4">
-								<td>JavaScript</td>
-								<td>
-									<pre style="width: 100%;"><code class="hljs javascript" data-trim>
-										let [a, b, c] = [1, 2, 3];
-										[a, b]        = [b, a];
-										// a  b  c
-										// 2  1  3
-									</code></pre>
-								</td>
-							</tr>
-						</table>
-						<div class="fragment" data-fragment-index="5">
-							Anpassung: <code>:=</code> anstelle von <code>=</code>!
-						</div>
-					</section>
-				</section>
-
-
-
-				<section id="comparisons-tercon-c-family">
-					<h3>Ternäres Konditional</h3>
-					<section id="comparisons-tercon-c-family-head">
-						<h4>C-Familie</h4>
-						<code>
-							<span class="fragment">bedingung ?</span>
-							<span class="fragment">true_value :</span>
-							<span class="fragment">false_value</span>
-						</code>
-					</section>
-					<section id="comparisons-tercon-c-family-ActionScript" data-transition="fade">
-						<h4>ActionScript 3, AWK, C, CFML, Crystal, Java, JavaScript, Ruby, Swift, TestStand, Verilog</h4>
-						<code>a ? b : c</code>
-					</section>
-					<section id="comparisons-tercon-c-family-APL" data-transition="fade">
-						<h4>APL</h4>
-						<code>{ a : b &#8900; c } &#9068;</code>
-					</section>
-					<section id="comparisons-tercon-c-family-Bash" data-transition="fade">
-						<h4>Bash</h4>
-						<code>((a ? b : c))</code>
-					</section>
-					<section id="comparisons-tercon-c-family-Cpp" data-transition="fade">
-						<h4>C++</h4>
-						<code>a ? b : c</code><br/>
-						<code>a ? b : c = d;</code>
-					</section>
-					<section id="comparisons-tercon-c-family-Cs" data-transition="fade">
-						<h4>C#</h4>
-						<code>a ? b : c</code><br/>
-						<code>(a ? ref b : ref c) = d;</code>
-					</section>
-					<section id="comparisons-tercon-c-family-CPL" data-transition="fade">
-						<h4>CPL</h4>
-						<code>a &rarr; b, c</code>
-
-						<aside class="notes">
-							Urvater der Tercon!<br/>
-							Urvater von BCPL, B, C!
-						</aside>
-					</section>
-					<section id="comparisons-tercon-c-family-Perl" data-transition="fade">
-						<h4>Perl</h4>
-						<code>$a ? $b : $c</code>
-					</section>
-					<section id="comparisons-tercon-c-family-PHP" data-transition="fade">
-						<h4>PHP</h4>
-						<code>$a ? $b : $c</code><br>
-						<code>$a ? $b : $c ? $d : $e<br>($a ? $b : $c) ? $d : $e</code>
-					</section>
-					<section id="comparisons-tercon-c-family-Raku" data-transition="fade">
-						<h4>Raku (Perl 6)</h4>
-						<code>$a ?? $b !! $c</code>
-					</section>
-					<section id="comparisons-tercon-c-family-Tcl" data-transition="fade">
-						<h4>Tcl</h4>
-						<code>[expr a ? b : c]</code>
-					</section>
-					<section id="comparisons-tercon-c-family--Problem-" data-transition="fade">
-						<h4>Problem?</h4>
-						<span class="fragment">Lesbarkeit</span>
-					</section>
-				</section>
-
-
-
-				<section id="comparisons-tercon-expr-family">
-					<h3>Ternäres Konditional</h3>
-					<section id="comparisons-tercon-expr-family-head">
-						<h4>Expression-Familie</h4>
-						<code>
-							<span class="fragment">if bedingung</span>
-							<span class="fragment">then true_value</span>
-							<span class="fragment">else false_value</span>
-						</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-Ada" data-transition="fade">
-						<h4>Ada, CoffeeScript, Haskell</h4>
-						<code>if a then b else c</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-ALGOL" data-transition="fade">
-						<h4>ALGOL 68</h4>
-						<code>IF a THEN b ELSE c FI</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-Ceylon" data-transition="fade">
-						<h4>Ceylon</h4>
-						<code>if(a) then b else c</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-Common" data-transition="fade">
-						<h4>Common Lisp, Scheme</h4>
-						<code>(if a b c)</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-Kotlin" data-transition="fade">
-						<h4>Kotlin, Scala</h4>
-						<code>if(a) b else c</code>
-					</section>
-					<section id="comparisons-tercon-expr-family-Ruby" data-transition="fade">
-						<h4>Ruby</h4>
-						<code>if a then b else c end</code><br/>
-
-						<aside class="notes">then oder Newline.</aside>
-					</section>
-					<section id="comparisons-tercon-expr-family-Rust" data-transition="fade">
-						<h4>Rust</h4>
-						<code>if a { b } else { c }</code>
-					</section>
-					<section id="comparisons-tercon-expr-family--Problem-" data-transition="fade">
-						<h4>Problem</h4>
-						<span class="fragment">Expressions vs. Commands</span>
-					</section>
-				</section>
-
-
-
-				<section id="comparisons-tercon-func-family">
-					<h3>Ternäres Konditional</h3>
-					<section id="comparisons-tercon-func-family-head">
-						<h4>Funktions-Familie</h4>
-						<span class="fragment">Looks like a function</span>
-					</section>
-					<section id="comparisons-tercon-func-family-Delphi" data-transition="fade">
-						<h4>Delphi</h4>
-						<code>IfThen(a, b, c)</code>
-					</section>
-					<section id="comparisons-tercon-func-family-Fortran" data-transition="fade">
-						<h4>Fortran</h4>
-						<code>merge(b, c, a)</code>
-					</section>
-					<section id="comparisons-tercon-func-family-R" data-transition="fade">
-						<h4>R</h4>
-						<code>ifelse(a, b, c)</code>
-					</section>
-					<section id="comparisons-tercon-func-family-VB" data-transition="fade">
-						<h4>Visual Basic .NET</h4>
-						<code>If(a, b, c)</code>
-					</section>
-					<section id="comparisons-tercon-func-family--Problem-" data-transition="fade">
-						<h4>Problem</h4>
-						<span class="fragment">Evaluation</span><br/>
-						<span class="fragment">Name clash?</span><br/>
-						<span class="fragment">Definition/Typ? (Generics?!)</span>
-					</section>
-				</section>
-
-
-
-				<section id="comparisons-tercon-spec-family">
-					<h3>Ternäres Konditional</h3>
-					<section id="comparisons-tercon-spec-family-head">
-						<h4>Spezialfälle</h4>
-						<span class="fragment">Für die Vollständigkeit</span>
-					</section>
-					<section id="comparisons-tercon-func-family-APL" data-transition="fade">
-						<h4>APL</h4>
-						<code>b &#8867;&#9059; a &#8866; c</code><br/>
-						<em>RTL!</em>
-					</section>
-					<section id="comparisons-tercon-func-family-Ceylon" data-transition="fade">
-						<h4>Ceylon</h4>
-						<code>a then b else c</code>
-					</section>
-					<section id="comparisons-tercon-func-family-Forth" data-transition="fade">
-						<h4>Forth</h4>
-						<code>a IF b ELSE c THEN ;</code>
-					</section>
-					<section id="comparisons-tercon-func-family-Python" data-transition="fade">
-						<h4>Python</h4>
-						<code>b if a else c</code>
-					</section>
-					<section id="comparisons-tercon-func-family-Smalltalk" data-transition="fade">
-						<h4>Smalltalk</h4>
-						<code>a ifTrue:[b] ifFalse:[c]</code>
-					</section>
-					<section id="comparisons-tercon-func-family-SQL" data-transition="fade">
-						<h4>SQL</h4>
-						<code>CASE WHEN a THEN b ELSE c END</code>
-					</section>
-				</section>
-
 
 				<section id="examples"><h2>Beispiele</h2></section>
 
@@ -558,46 +212,24 @@
 				<section id="examples-parass">
 					<h3>Parallel Assignment</h3>
 					<section id="examples-parass-1">
-						<h4>Fibonacci</h4>
+						<h4>Euklid</h4>
 						<pre><code class="hljs iml" data-trim>
-							fun fib(var n: int64)
-							  returns m: int64
-							local
-							  t: int64
-							do
-							  m init, t init := 0, 1;
-							  while n > 0 do
-							    m, t, n = t, m + t, n - 1
-							  endwhile
-							endfun
-						</code></pre>
-					</section>
-					<section id="examples-parass-2">
-						<h4>Iteratives Faktorial</h4>
-						<pre><code class="hljs iml" data-trim>
-							fun fact(n: int64)
-							  returns acc: int64
-							local
-							  i: int64
-							do
-							  acc init, i init := 1, 1;
-							  while i &lt;= n do
-							    acc, i := acc * i, i + 1
-							  endwhile
-							endfun
-						</code></pre>
-					</section>
-					<section id="examples-parass-3">
-						<h4>Iteratives Faktorial</h4>
-						<pre><code class="hljs iml" data-trim>
-							proc divide(in copy const m:int64, in copy const n:int64,
-							            out ref var q:int64, out ref var r:int64)
-							do
-							  q init, r init := 0, m;
-							  while r >= n do
-							    q, r := q + 1, r - n
-							  endwhile
-							endproc
+                            proc eea(in var a: int64, in var b: int64,
+                                     out ggt : int64, out    x: int64, out y: int64)
+                            local var x': int64; var y': int64;
+                                  var q : int64; var r : int64
+                            do if a < b then call eea(b, a, ggt, x, y)
+                               else
+                                 x init, y init, x' init, y' init,
+                                 q init, r init := 1, 0, 0, 1, -1, -1;
+                                 while b' /= 0 do
+                                   q, r         := a divE b, a modE b;
+                                   a, b         := b       , r;
+                                   x, y, x', y' := x' , y' , x - q*x', y - q*y'
+                                 endwhile;
+                                 ggt init := a
+                               endif
+                            endproc
 						</code></pre>
 					</section>
 				</section>
@@ -606,17 +238,6 @@
 
 				<section id="examples-tercon">
 					<h3>Ternäres Konditional</h3>
-					<section id="examples-tercon-1">
-						<h4>Max-Funktion</h4>
-						<pre><code class="hljs iml" data-trim>
-							fun max(a: int64, b: int64)
-							  returns m: int64
-							do
-							  m init := a > b ? a : b
-							endfun
-						</code></pre>
-					</section>
-
 					<section id="examples-tercon-2">
 						<h4>Rekursives Faktorial</h4>
 						<pre><code class="hljs iml" data-trim>
@@ -629,11 +250,366 @@
 					</section>
 				</section>
 
+                <section id="compiler-title"><h2>Compiler</h2></section>
+
+                <section id="parser">
+                    <h3>Parser</h3>
+                    <section id="parser-1">
+                        <h4>Kein Fix & Foxi</h4>
+                        <pre class="fragment"><code class="hljs haskell" data-trim>
+                            -- | funDecl ::=
+                            --         FUN IDENT paramList
+                            --         RETURNS stoDecl
+                            --         [GLOBAL globImps]
+                            --         [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
+                            data FunctionDeclaration =
+                              FunctionDeclaration Ident [Param]
+                                StoreDeclaration [GlobalImport]
+                                [StoreDeclaration] [Command]
+                              deriving (Eq, Show)
+                        </code></pre>
+                    </section>
+                    <section id="parser-2">
+                        <pre><code class="hljs haskell" data-trim>
+                            -- | funDecl ::=
+                            --         FUN IDENT paramList
+                            --         RETURNS stoDecl
+                            --         [GLOBAL globImps]
+                            --         [LOCAL cpsStoDecl] DO cpsCmd ENDFUN
+                            parseFunDecl :: Parser Syntax.FunctionDeclaration
+                            parseFunDecl =
+                              Syntax.FunctionDeclaration <$>
+                              (token T.Fun *> parseIdentifier) <*>
+                              parseParamList <*>
+                              (token T.Returns *> parseStoDecl) <*>
+                              orEmpty (token T.Global *> parseGlobImps) <*>
+                              orEmpty (token T.Local *> parseCpsStoDecl) <*>
+                              (token T.Do *> parseCpsCmd <* token T.Endfun)
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section id="parser-parass" data-transition="slide">
+                    <h3>Parallel Assignment</h3>
+                    <section id="parser-parass-1" data-transition="fade">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,3">
+                            data Command
+                              = SkipCommand
+                              | AssignCommand Expr Expr
+                              | WhileCommand Expr [Command]
+                              | CallCommand Ident [Expr] [Ident]
+                              | DebugInCommand Expr
+                              | DebugOutCommand Expr
+                              deriving (Eq, Show)
+                        </code></pre>
+                    </section>
+                    <section id="parser-parass-2" data-transition="fade">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,3">
+                            data Command
+                              = SkipCommand
+                              | AssignCommand [Expr] [Expr]
+                              | WhileCommand Expr [Command]
+                              | CallCommand Ident [Expr] [Ident]
+                              | DebugInCommand Expr
+                              | DebugOutCommand Expr
+                              deriving (Eq, Show)
+                        </code></pre>
+                    </section>
+                    <section id="parser-parass-3" data-transition="fade">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="7" style="font-size: 0.7em;">
+                            --
+                            --
+
+                            parseCmd :: Parser Syntax.Command
+                            parseCmd = _parseSkip <|> _parseBecomes <|> _parseIf <|> _parseWhile <|> _parseCall <|> _parseDebugIn <|> _parseDebugOut
+                              where _parseSkip = Syntax.SkipCommand <$ token T.Skip
+                                    _parseBecomes = Syntax.AssignCommand <$> parseExpr  <*> (token T.Becomes *> parseExpr )
+                                    _parseIf =
+                                      Syntax.IfCommand <$> (token T.If *> parseExpr) <*> (token T.Then *> parseCpsCmd) <*>
+                                      (token T.Else *> parseCpsCmd <* token T.Endif)
+                                    _parseWhile =
+                                      Syntax.WhileCommand <$> (token T.While *> parseExpr) <*> (token T.Do *> parseCpsCmd <* token T.Endwhile)
+                                    _parseCall = Syntax.CallCommand <$> (token T.Call *> parseIdentifier) <*> parseExprList <*> orEmpty parseGlobInits
+                                    _parseDebugIn = Syntax.DebugInCommand <$> (token T.DebugIn *> parseExpr)
+                                    _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
+                        </code></pre>
+                    </section>
+                    <section id="parser-parass-4" data-transition="fade">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="7" style="font-size: 0.7em;">
+                            --
+                            --
+
+                            parseCmd :: Parser Syntax.Command
+                            parseCmd = _parseSkip <|> _parseBecomes <|> _parseIf <|> _parseWhile <|> _parseCall <|> _parseDebugIn <|> _parseDebugOut
+                              where _parseSkip = Syntax.SkipCommand <$ token T.Skip
+                                    _parseBecomes = Syntax.AssignCommand <$> parseExprs <*> (token T.Becomes *> parseExprs)
+                                    _parseIf =
+                                      Syntax.IfCommand <$> (token T.If *> parseExpr) <*> (token T.Then *> parseCpsCmd) <*>
+                                      (token T.Else *> parseCpsCmd <* token T.Endif)
+                                    _parseWhile =
+                                      Syntax.WhileCommand <$> (token T.While *> parseExpr) <*> (token T.Do *> parseCpsCmd <* token T.Endwhile)
+                                    _parseCall = Syntax.CallCommand <$> (token T.Call *> parseIdentifier) <*> parseExprList <*> orEmpty parseGlobInits
+                                    _parseDebugIn = Syntax.DebugInCommand <$> (token T.DebugIn *> parseExpr)
+                                    _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
+                        </code></pre>
+                    </section>
+                    <section id="parser-parass-5" data-transition="fade">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1-2,7" style="font-size: 0.7em;">
+                            parseExprs :: Parser [Syntax.Expr]
+                            parseExprs = commaList parseExpr
+
+                            parseCmd :: Parser Syntax.Command
+                            parseCmd = _parseSkip <|> _parseBecomes <|> _parseIf <|> _parseWhile <|> _parseCall <|> _parseDebugIn <|> _parseDebugOut
+                              where _parseSkip = Syntax.SkipCommand <$ token T.Skip
+                                    _parseBecomes = Syntax.AssignCommand <$> parseExprs <*> (token T.Becomes *> parseExprs)
+                                    _parseIf =
+                                      Syntax.IfCommand <$> (token T.If *> parseExpr) <*> (token T.Then *> parseCpsCmd) <*>
+                                      (token T.Else *> parseCpsCmd <* token T.Endif)
+                                    _parseWhile =
+                                      Syntax.WhileCommand <$> (token T.While *> parseExpr) <*> (token T.Do *> parseCpsCmd <* token T.Endwhile)
+                                    _parseCall = Syntax.CallCommand <$> (token T.Call *> parseIdentifier) <*> parseExprList <*> orEmpty parseGlobInits
+                                    _parseDebugIn = Syntax.DebugInCommand <$> (token T.DebugIn *> parseExpr)
+                                    _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section id="parser-tercon" data-transition="slide">
+                    <h3>Ternäres Konditional</h3>
+                    <section id="parser-tercon-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="7">
+                            data Expr
+                              = LiteralExpr AtomicType Literal
+                              | FunctionCallExpr AtomicType Ident [Expr]
+                              | NameExpr AtomicType Ident Bool -- Variable names, bool = init or not
+                              | UnaryExpr AtomicType UnaryOpr Expr
+                              | BinaryExpr AtomicType BinaryOpr Expr Expr
+                              | ConditionalExpr AtomicType Expr Expr Expr
+                              deriving (Eq, Show)
+                        </code></pre>
+                    </section>
+                    <section id="parser-tercon-2" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,2" style="font-size: 0.75em;">
+                            -- | expr  ::=
+                            --         term1 [CONDOPR expr COLON expr]
+                            parseExpr :: Parser Syntax.Expr
+                            parseExpr = do
 
 
-				<section id="end-slide">
-					<h3>Danke!</h3>
-				</section>
+                                Nothing -> condition
+                                Just (trueValue, falseValue) ->
+                                  (Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue))
+                              where
+                                _parseRest =
+                                    (,) <$>
+                                    --
+                                    --
+                        </code></pre>
+                    </section>
+                    <section id="parser-tercon-3" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5" style="font-size: 0.75em;">
+                            -- | expr  ::=
+                            --         term1 [CONDOPR expr COLON expr]
+                            parseExpr :: Parser Syntax.Expr
+                            parseExpr = do
+                              condition <- parseTerm1
+
+                                Nothing -> condition
+                                Just (trueValue, falseValue) ->
+                                  (Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue))
+                              where
+                                _parseRest =
+                                    (,) <$>
+                                    --
+                                    --
+                        </code></pre>
+                    </section>
+                    <section id="parser-tercon-4" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6" style="font-size: 0.75em;">
+                            -- | expr  ::=
+                            --         term1 [CONDOPR expr COLON expr]
+                            parseExpr :: Parser Syntax.Expr
+                            parseExpr = do
+                              condition <- parseTerm1
+                              optional _parseRest <&> \case
+                                Nothing -> condition
+                                Just (trueValue, falseValue) ->
+                                  (Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue))
+                              where
+                                _parseRest =
+                                    (,) <$>
+                                    --
+                                    --
+                        </code></pre>
+                    </section>
+                    <section id="parser-tercon-5" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6,13" style="font-size: 0.75em;">
+                            -- | expr  ::=
+                            --         term1 [CONDOPR expr COLON expr]
+                            parseExpr :: Parser Syntax.Expr
+                            parseExpr = do
+                              condition <- parseTerm1
+                              optional _parseRest <&> \case
+                                Nothing -> condition
+                                Just (trueValue, falseValue) ->
+                                  (Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue))
+                              where
+                                _parseRest =
+                                    (,) <$>
+                                    (token T.CondOpr *> parseExpr) <*>
+                                    --
+                        </code></pre>
+                    </section>
+                    <section id="parser-tercon-6" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6,13,14" style="font-size: 0.75em;">
+                            -- | expr  ::=
+                            --         term1 [CONDOPR expr COLON expr]
+                            parseExpr :: Parser Syntax.Expr
+                            parseExpr = do
+                              condition <- parseTerm1
+                              optional _parseRest <&> \case
+                                Nothing -> condition
+                                Just (trueValue, falseValue) ->
+                                  (Syntax.ConditionalExpr Syntax.Untyped condition trueValue falseValue))
+                              where
+                                _parseRest =
+                                    (,) <$>
+                                    (token T.CondOpr *> parseExpr) <*>
+                                    (token T.Colon *> parseExpr)
+                        </code></pre>
+                    </section>
+                </section>
+
+
+
+                <section id="typecheck-title"><h2>Typechecker</h2></section>
+
+                <section id="typecheck-parass" data-transition="slide">
+                    <h3>Parallel Assignment</h3>
+                    <section id="typecheck-parass-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
+                            (S.AssignCommand exprl1 exprl2) ->
+                              if checked
+                                then S.AssignCommand newExprl1 newExprl2
+                                else error "Type Error: AssignCommand"
+                              where newExprl1 = checkExpr c exprl1
+                                    newExprl2 = checkExpr c exprl2
+                                    checked   =
+                                      and (zipWith
+                                            (\e1 e2 ->
+                                              (getExprAtomicType e1 == getExprAtomicType e2) &&
+                                              (isLExpr e1) ||
+                                              error "Assingment of two differnt types")
+                                            newExprl1
+                                            newExprl2)
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section id="typecheck-tercon" data-transition="slide">
+                    <h3>Ternäres Konditional</h3>
+                    <section id="typecheck-tercon-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers="10-12" style="font-size: 0.75em;">
+                            (S.ConditionalExpr atomicType expr1 expr2 expr3) ->
+                              if isBoolType
+                                then if equal
+                                       then S.ConditionalExpr ty nex1 nex2 nex3
+                                       else error "Type Error: Conditional do not support different branching types."
+                                else error "Type Error: Conditional must have bool type as condition."
+                              where nex1 = checkExprSingle c expr1
+                                    nex2 = checkExprSingle c expr2
+                                    nex3 = checkExprSingle c expr3
+                                    isBoolType = getExprAtomicType nex1 == S.BoolType
+                                    ty = getExprAtomicType nex2
+                                    equal = ty == getExprAtomicType nex3
+                        </code></pre>
+                    </section>
+                </section>
+
+
+
+                <section id="codegen-title"><h2>CodeGen</h2></section>
+                <section id="codegen-parass" data-transition="slide">
+                    <h3>Parallel Assignment</h3>
+                    <section id="codegen-parass-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
+                            compileAssignment ::  S.Expr  ->  S.Expr  -> Scoped [UnfixedInstruction]
+                            compileAssignment leftExpr  rightExpr  = do
+                              rightInstrs <-      compileExpr rightExpr
+                              leftLoad  <-      compileLExpr leftExpr
+
+
+
+
+
+
+
+
+
+
+                              return $ leftLoad ++ rightInstrs ++ [FixedInstruction VM.Store]
+                        </code></pre>
+                    </section>
+                    <section id="codegen-parass-2" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
+                            compileAssignment :: [S.Expr] -> [S.Expr] -> Scoped [UnfixedInstruction]
+                            compileAssignment leftExprs rightExprs = do
+                              rightInstrs <- mapM compileExpr rightExprs
+                              leftLoads <- mapM compileLExpr leftExprs
+                              tempOffset <- asks $ tempSlotStart . activeSlotMap
+                              let frameTempLoadAddrs = FixedInstruction . VM.LoadAddrRel <$> [tempOffset ..]
+                                  computeInstructions =
+                                    zipWith
+                                      (\rhi tLoad -> tLoad : rhi ++ [FixedInstruction VM.Store])
+                                      rightInstrs frameTempLoadAddrs
+                                  storeInstructions =
+                                    zipWith
+                                      (\load tempAddrLoad -> load ++ [tempAddrLoad, FixedInstruction VM.Deref, FixedInstruction VM.Store])
+                                      leftLoads frameTempLoadAddrs
+                              return $ concat $ computeInstructions ++ storeInstructions
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section id="codegen-tercon" data-transition="slide">
+                    <h3>Ternäres Konditional</h3>
+                    <section id="codegen-tercon-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
+                            compileIf   ::           S.Expr -> [S.Command] -> [S.Command] -> Scoped [UInstruction]
+                            compileIf     condition thenBlock elseBlock = do
+                              conditionInstructions <- compileExpr condition
+                              thenInstructions <- foldMapM compileCommand thenBlock
+                              elseInstructions <- foldMapM compileCommand elseBlock
+                              let skipThenInstruction = RelativeCondJump $ length thenInstructions + 2
+                                  skipElseInstruction = RelativeUncondJump $ length elseInstructions + 1
+                              return $
+                                conditionInstructions ++ skipThenInstruction :
+                                  thenInstructions ++ skipElseInstruction :
+                                  elseInstructions
+                        </code></pre>
+                    </section>
+                    <section id="codegen-tercon-2" data-transition="none">
+                        <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
+                            compileCond :: S.Type -> S.Expr ->  S.Expr     ->  S.Expr     -> Scoped [UInstruction]
+                            compileCond _ condition thenExpr  elseExpr  = do
+                              conditionInstructions <- compileExpr condition
+                              thenInstructions <-          compileExpr    thenExpr
+                              elseInstructions <-          compileExpr    elseExpr
+                              let skipThenInstruction = RelativeCondJump $ length thenInstructions + 2
+                                  skipElseInstruction = RelativeUncondJump $ length elseInstructions + 1
+                              return $
+                                conditionInstructions ++ skipThenInstruction :
+                                  thenInstructions ++ skipElseInstruction :
+                                  elseInstructions
+                        </code></pre>
+                    </section>
+                </section>
+
+
+
+                <section id="end-slide">
+                    <h3>Danke!</h3>
+                </section>
 			</div>
 		</div>
 
@@ -642,27 +618,26 @@
 		<script>
 			function imlLang(hljs) {
 				let identRegex = "[a-zA-Z]([a-zA-Z]|[0-9]|'|_)*";
-				let language = {
-					case_insensitive: false,
-					keywords: {
-						keyword: 'call const copy debugin debugout divE do else endfun endif endproc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
-						literal: 'true false',
-						built_in: 'bool int64'
-					},
-					lexemes: identRegex,
-					contains: [
-						hljs.C_LINE_COMMENT_MODE,
-						{ className: 'number', begin: "\\b[0-9]+('*[0-9]+)*" },
-						{
-							variants: [
-								{ className: 'function', beginKeywords: 'proc fun' }
-							],
-							end: /\(/,
-							contains: [ { className: 'title', begin: identRegex } ]
-						}
-					]
-				};
-				return language;
+                return {
+                    case_insensitive: false,
+                    keywords: {
+                        keyword: 'call const copy debugin debugout divE do else endfun endif endproc endprogram endwhile false fun global if in init inout local modE not out proc program ref returns skip then true var while',
+                        literal: 'true false',
+                        built_in: 'bool int64'
+                    },
+                    lexemes: identRegex,
+                    contains: [
+                        hljs.C_LINE_COMMENT_MODE,
+                        {className: 'number', begin: "\\b[0-9]+('*[0-9]+)*"},
+                        {
+                            variants: [
+                                {className: 'function', beginKeywords: 'proc fun'}
+                            ],
+                            end: /\(/,
+                            contains: [{className: 'title', begin: identRegex}]
+                        }
+                    ]
+                };
 			}
 
 			function ebnfLang(hljs) {
@@ -676,16 +651,14 @@
 					begin: /[A-Z]+\b/
 				};
 
-				let language = {
-					case_insensitive: false,
-					contains: [
-						hljs.C_LINE_COMMENT_MODE,
-						nonTerminal,
-						terminal
-					]
-				};
-
-				return language;
+                return {
+                    case_insensitive: false,
+                    contains: [
+                        hljs.C_LINE_COMMENT_MODE,
+                        nonTerminal,
+                        terminal
+                    ]
+                };
 			}
 
 			// More info about config & dependencies:
@@ -707,6 +680,7 @@
 				dependencies: [
 					{ src: 'plugin/markdown/marked.js' },
 					{ src: 'plugin/markdown/markdown.js' },
+                    { src: 'plugin/math/math.js', async: true },
 					{ src: 'plugin/notes/notes.js', async: true },
 					{ src: 'plugin/highlight/highlight.js', async: true, callback() {
 						hljs.configure({languages: []}); // Disable detection.
