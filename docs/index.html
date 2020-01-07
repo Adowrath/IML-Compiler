@@ -211,11 +211,15 @@
 
 				<section id="examples-parass">
 					<h3>Parallel Assignment</h3>
-					<section id="examples-parass-1">
-						<h4>Euklid</h4>
-						<pre><code class="hljs iml" data-trim>
-                            proc eea(in var a: int64, in var b: int64,
-                                     out ggt : int64, out    x: int64, out y: int64)
+                    <section id="examples-parass-1">
+                        <h4>Euklid</h4>
+                        <img src="euclid.png" alt="Euclid from Mada">
+                    </section>
+                    <section id="examples-parass-2">
+                        <h4>Euklid</h4>
+                        <pre><code class="hljs iml" data-line-numbers data-trim>
+                            proc Euclid(in var a: int64, in var b: int64,
+                                        out ggt : int64, out    x: int64, out y: int64)
                             local var x': int64; var y': int64;
                                   var q : int64; var r : int64
                             do if a < b then call eea(b, a, ggt, x, y)
@@ -231,7 +235,7 @@
                                endif
                             endproc
 						</code></pre>
-					</section>
+                    </section>
 				</section>
 
 
@@ -289,13 +293,13 @@
                     </section>
                 </section>
 
-                <section id="parser-parass" data-transition="slide">
-                    <h3>Parallel Assignment</h3>
-                    <section id="parser-parass-1" data-transition="fade">
+                <section id="parser-parass-1" data-transition="slide">
+                    <h3>Parallel Assignment - AST</h3>
+                    <section id="parser-parass-1-1" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,3">
                             data Command
                               = SkipCommand
-                              | AssignCommand Expr Expr
+                              | AssignCommand  Expr   Expr
                               | WhileCommand Expr [Command]
                               | CallCommand Ident [Expr] [Ident]
                               | DebugInCommand Expr
@@ -303,7 +307,7 @@
                               deriving (Eq, Show)
                         </code></pre>
                     </section>
-                    <section id="parser-parass-2" data-transition="fade">
+                    <section id="parser-parass-1-2" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,3">
                             data Command
                               = SkipCommand
@@ -315,7 +319,10 @@
                               deriving (Eq, Show)
                         </code></pre>
                     </section>
-                    <section id="parser-parass-3" data-transition="fade">
+                </section>
+                <section id="parser-parass-2">
+                    <h3>Parallel Assignment - Parser</h3>
+                    <section id="parser-parass-2-1" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="7" style="font-size: 0.7em;">
                             --
                             --
@@ -334,7 +341,7 @@
                                     _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
                         </code></pre>
                     </section>
-                    <section id="parser-parass-4" data-transition="fade">
+                    <section id="parser-parass-2-2" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="7" style="font-size: 0.7em;">
                             --
                             --
@@ -353,7 +360,7 @@
                                     _parseDebugOut = Syntax.DebugOutCommand <$> (token T.DebugOut *> parseExpr)
                         </code></pre>
                     </section>
-                    <section id="parser-parass-5" data-transition="fade">
+                    <section id="parser-parass-2-3" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1-2,7" style="font-size: 0.7em;">
                             parseExprs :: Parser [Syntax.Expr]
                             parseExprs = commaList parseExpr
@@ -374,9 +381,9 @@
                     </section>
                 </section>
 
-                <section id="parser-tercon" data-transition="slide">
-                    <h3>Ternäres Konditional</h3>
-                    <section id="parser-tercon-1" data-transition="none">
+                <section id="parser-tercon-1" data-transition="slide">
+                    <h3>Ternäres Konditional AST</h3>
+                    <section id="parser-tercon-1-1" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="7">
                             data Expr
                               = LiteralExpr AtomicType Literal
@@ -388,7 +395,10 @@
                               deriving (Eq, Show)
                         </code></pre>
                     </section>
-                    <section id="parser-tercon-2" data-transition="none">
+                </section>
+                <section id="parser-tercon-2" data-transition="slide">
+                    <h3>Ternäres Konditional - Parser</h3>
+                    <section id="parser-tercon-2-1" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,2" style="font-size: 0.75em;">
                             -- | expr  ::=
                             --         term1 [CONDOPR expr COLON expr]
@@ -406,7 +416,7 @@
                                     --
                         </code></pre>
                     </section>
-                    <section id="parser-tercon-3" data-transition="none">
+                    <section id="parser-tercon-2-2" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5" style="font-size: 0.75em;">
                             -- | expr  ::=
                             --         term1 [CONDOPR expr COLON expr]
@@ -424,7 +434,7 @@
                                     --
                         </code></pre>
                     </section>
-                    <section id="parser-tercon-4" data-transition="none">
+                    <section id="parser-tercon-2-3" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6" style="font-size: 0.75em;">
                             -- | expr  ::=
                             --         term1 [CONDOPR expr COLON expr]
@@ -442,7 +452,7 @@
                                     --
                         </code></pre>
                     </section>
-                    <section id="parser-tercon-5" data-transition="none">
+                    <section id="parser-tercon-2-4" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6,13" style="font-size: 0.75em;">
                             -- | expr  ::=
                             --         term1 [CONDOPR expr COLON expr]
@@ -460,7 +470,7 @@
                                     --
                         </code></pre>
                     </section>
-                    <section id="parser-tercon-6" data-transition="none">
+                    <section id="parser-tercon-2-5" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers="1,2,5,6,13,14" style="font-size: 0.75em;">
                             -- | expr  ::=
                             --         term1 [CONDOPR expr COLON expr]
@@ -476,6 +486,131 @@
                                     (,) <$>
                                     (token T.CondOpr *> parseExpr) <*>
                                     (token T.Colon *> parseExpr)
+                        </code></pre>
+                    </section>
+                </section>
+
+
+
+                <section id="defaulting-explanation" data-transition="slide">
+                    <h3>Defaulting</h3>
+                    <section id="defaulting-explanation-0" data-transition="none">
+                        <pre class="fragment"><code class="hljs haskell" data-line-numbers="1-13" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-1" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="2-3" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-2" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="6" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-3" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="7" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-4" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="8-9" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-5" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="10-11" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
+                        </code></pre>
+                    </section>
+                    <section id="defaulting-explanation-6" data-transition="none">
+                        <pre><code class="hljs haskell" data-line-numbers="12-13" data-trim style="font-size: 0.6em;">
+                            fillParamModes :: S.Param -> S.Param
+                            fillParamModes (S.Param flowMode mechMode changeMode typedIdent) =
+                              S.Param (Just newFlow) (Just newMech) (Just newChange) typedIdent
+                              where
+                                (newFlow, newMech, newChange) = case (flowMode, mechMode, changeMode) of
+                                  (Just S.InOutFlow, _             , Just S.ConstChange) -> error "inout ____ const is not allowed"
+                                  (Just S.InFlow   , Just S.RefMech, Just S.VarChange  ) -> error "in    ref  var   is not allowed"
+                                  (Nothing         , Just S.RefMech, Just S.VarChange  ) ->
+                                    (S.InOutFlow                   , S.RefMech                      , S.VarChange                         )
+                                  (Just S.InOutFlow, _             , _                 ) ->
+                                    (S.InOutFlow                   , S.CopyMech `fromMaybe` mechMode, S.VarChange `fromMaybe` changeMode  )
+                                  (_               , _             , _                 ) ->
+                                    (S.InFlow `fromMaybe` flowMode , S.CopyMech `fromMaybe` mechMode, S.ConstChange `fromMaybe` changeMode)
                         </code></pre>
                     </section>
                 </section>
@@ -533,7 +668,7 @@
                     <h3>Parallel Assignment</h3>
                     <section id="codegen-parass-1" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
-                            compileAssignment ::  S.Expr  ->  S.Expr  -> Scoped [UnfixedInstruction]
+                            compileAssignment ::  S.Expr  ->  S.Expr  -> Scoped [UInstruction]
                             compileAssignment leftExpr  rightExpr  = do
                               rightInstrs <-      compileExpr rightExpr
                               leftLoad  <-      compileLExpr leftExpr
@@ -552,7 +687,7 @@
                     </section>
                     <section id="codegen-parass-2" data-transition="none">
                         <pre><code class="hljs haskell" data-trim data-line-numbers style="font-size: 0.75em;">
-                            compileAssignment :: [S.Expr] -> [S.Expr] -> Scoped [UnfixedInstruction]
+                            compileAssignment :: [S.Expr] -> [S.Expr] -> Scoped [UInstruction]
                             compileAssignment leftExprs rightExprs = do
                               rightInstrs <- mapM compileExpr rightExprs
                               leftLoads <- mapM compileLExpr leftExprs
