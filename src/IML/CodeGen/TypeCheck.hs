@@ -35,7 +35,10 @@ typedSimpleAdd = typeChecks <$> filledSimpleAdd
 -- compiledProgram :: IO VM.VMProgram
 -- compiledProgram = compileProgram <$> typedSimpleAdd
 -----------------------
-
+{-|
+    Checks the type and scope of a program.
+    Returns the program with all atomic types set.
+-}
 typeChecks :: S.Program -> S.Program
 typeChecks (S.Program ident programParams stores funcs procs commands) =
   if C.checkContextIdentifiers globalContext
@@ -52,6 +55,10 @@ typeChecks (S.Program ident programParams stores funcs procs commands) =
             C.globals     = [],
             C.locals      = stores }
 
+{-|
+    Checks the type and scope of a function.
+    Returns the function with all atomic types set.
+-}
 checkFDecl :: C.Context -> S.FunctionDeclaration -> S.FunctionDeclaration
 checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports storeDeclarations commands) =
   if C.checkContextIdentifiers localContext
@@ -67,6 +74,10 @@ checkFDecl c (S.FunctionDeclaration ident params storeDeclaration globalImports 
             C.globals     = globalImports ++ C.globals c,
             C.locals      = storeDeclaration : storeDeclarations } -- Returnvalue gets added to the Local Params
 
+{-|
+    Checks the type and scope of a procedure.
+    Returns the procedure with all atomic types set.
+-}
 checkPDecl :: C.Context -> S.ProcedureDeclaration -> S.ProcedureDeclaration
 checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclarations commands) =
   if C.checkContextIdentifiers localContext
@@ -82,7 +93,11 @@ checkPDecl c (S.ProcedureDeclaration ident params globalImports storeDeclaration
             C.globals     = globalImports ++ C.globals c,
             C.locals      = storeDeclarations }
 
-checkCommands :: C.Context -> [S.Command] -> [S.Command] -- no Following where Function-Calls or Procedure-Calls
+{-|
+    Checks the type and scope of all commands.
+    Returns all commands with all atomic types set.
+-}
+checkCommands :: C.Context -> [S.Command] -> [S.Command]
 checkCommands context commandList = checkCommands' [] context commandList
     where checkCommands' acc _ [] = acc -- basecase
           checkCommands' acc c (co:cos) = checkCommands' (acc ++ [newCmd]) c cos
@@ -124,13 +139,20 @@ checkCommands context commandList = checkCommands' [] context commandList
                                       (S.DebugOutCommand expr)                -> S.DebugOutCommand newExpr
                                         where newExpr = checkExprSingle c expr -- set Type
 
-
+{-|
+    Checks the type and scope of all expressions.
+    Returns all expressions with all atomic types set.
+-}
 checkExpr :: C.Context -> [S.Expr] -> [S.Expr] -- no Following where Function-Calls or Procedure-Calls
 checkExpr context exprList = checkExpr' [] context exprList
     where checkExpr' acc _ [] = acc -- basecase
           checkExpr' acc c (e:es) = checkExpr' (acc ++ [newExpr]) c es
             where newExpr = checkExprSingle c e
 
+{-|
+    Checks the type and scope of an expression.
+    Returns an expression with all atomic types set.
+-}
 checkExprSingle :: C.Context -> S.Expr -> S.Expr
 checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)                  -> S.LiteralExpr (getAtomicTypeOfLiteral literal) literal -- No Checks needed, just setting AtomicType
 
@@ -178,6 +200,10 @@ checkExprSingle c e = case e of (S.LiteralExpr atomicType literal)              
 
 
 -- HELPERS
+{-|
+    Adds the atomic type to a binary expression.
+    Returns the filled expression.
+-}
 binaryOprSolver :: S.BinaryOpr -> S.Expr -> S.Expr -> S.Expr
 binaryOprSolver op expr1 expr2 = S.BinaryExpr newType op expr1 expr2
   where
@@ -199,15 +225,10 @@ binaryOprSolver op expr1 expr2 = S.BinaryExpr newType op expr1 expr2
         (S.BoolType, S.CAndOpr, S.BoolType)     -> S.BoolType
         (S.BoolType, S.COrOpr, S.BoolType)      -> S.BoolType
 
-
-setExprAtomicType :: C.Context -> S.Expr -> S.Expr
-setExprAtomicType c e = case e of (S.LiteralExpr atomicType literal)                -> S.LiteralExpr (getAtomicTypeOfLiteral literal) literal
-                                  (S.FunctionCallExpr atomicType ident exprl)       -> S.FunctionCallExpr (C.getAtomicTypeFromFuncIdent c ident) ident exprl
-                                  (S.NameExpr atomicType ident bool)                -> S.NameExpr (C.getAtomicTypeFromVarIdent c ident) ident bool
-                                  (S.UnaryExpr atomicType unaryOpr expr)            -> S.UnaryExpr (getExprAtomicType (setExprAtomicType c expr)) unaryOpr expr
-                                  (S.BinaryExpr atomicType binaryOpr expr1 expr2)   -> S.BinaryExpr (getExprAtomicType (setExprAtomicType c expr1)) binaryOpr expr1 expr2
-                                  (S.ConditionalExpr atomicType expr1 expr2 expr3)  -> S.ConditionalExpr (getExprAtomicType (setExprAtomicType c expr2)) expr1 expr2 expr3
-
+{-|
+    Takes an expression and returns the atomic type.
+    Important the atomic type has already to be set for the expression.
+-}
 getExprAtomicType :: S.Expr -> S.AtomicType
 getExprAtomicType (S.LiteralExpr atomicType _)            = if atomicType == S.Untyped then error "No AtomicType set" else atomicType
 getExprAtomicType (S.FunctionCallExpr atomicType _ _)     = if atomicType == S.Untyped then error "No AtomicType set" else atomicType
@@ -216,13 +237,16 @@ getExprAtomicType (S.UnaryExpr atomicType _ _)            = if atomicType == S.U
 getExprAtomicType (S.BinaryExpr atomicType _ _ _)         = if atomicType == S.Untyped then error "No AtomicType set" else atomicType
 getExprAtomicType (S.ConditionalExpr atomicType _ _ _)    = if atomicType == S.Untyped then error "No AtomicType set" else atomicType
 
+{-|
+    Takes a literal and returns its atomic type.
+-}
 getAtomicTypeOfLiteral :: S.Literal -> S.AtomicType
 getAtomicTypeOfLiteral l = case l of (S.BoolLiteral _)  -> S.BoolType
                                      (S.Int64Literal _) -> S.Int64Type
 
-compair2Types :: S.AtomicType -> S.AtomicType -> Bool
-compair2Types a b = a == b
-
+{-|
+    Takes an expression and tells if it is an LValue.
+-}
 isLExpr :: S.Expr -> Bool
 isLExpr (S.NameExpr _ _ _)  = True
 isLExpr _                   = False
