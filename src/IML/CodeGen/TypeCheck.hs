@@ -103,12 +103,13 @@ checkCommands context commandList = checkCommands' [] context commandList
           checkCommands' acc c (co:cos) = checkCommands' (acc ++ [newCmd]) c cos
             where newCmd = case co of (S.SkipCommand)                         -> S.SkipCommand
                                       (S.AssignCommand exprl1 exprl2)         ->
-                                        if checked
+                                        if checked && eqLen
                                           then S.AssignCommand newExprl1 newExprl2
-                                          else error "Type Error: AssignCommand"
+                                          else error "Type Error: AssignCommand: unequal amount of expressions left and right"
                                         where newExprl1 = checkExpr c exprl1
                                               newExprl2 = checkExpr c exprl2
                                               checked   = and (zipWith (\e1 e2 -> (getExprAtomicType e1 == getExprAtomicType e2) && (isLExpr e1) || error "Assingment of two differnt types") newExprl1 newExprl2) -- check Type
+                                              eqLen     = length newExprl1 == length newExprl2
 
                                       (S.IfCommand expr commandl1 commandl2)  ->
                                         if getExprAtomicType newExpr == S.BoolType -- check Type
